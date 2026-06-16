@@ -4657,15 +4657,20 @@ modal.addEventListener('click', event => {
   if (event.target.id === 'contact-store') showToast('Hotline: 0909 000 888 - Zalo: 0909 000 888.');
 });
 
-let detailPageTouchEnd = false;
-detailPage.addEventListener('touchstart', () => {
-  detailPageTouchEnd = true;
+let detailPageDragEnd = false;
+let detailPagePointerStart = 0;
+detailPage.addEventListener('pointerdown', (event) => {
+  detailPagePointerStart = { x: event.clientX, y: event.clientY };
+  detailPageDragEnd = false;
 }, { passive: true });
-detailPage.addEventListener('touchend', () => {
-  detailPageTouchEnd = false;
+detailPage.addEventListener('pointermove', (event) => {
+  if (detailPageDragEnd) return;
+  const dx = Math.abs(event.clientX - detailPagePointerStart.x);
+  const dy = Math.abs(event.clientY - detailPagePointerStart.y);
+  if (dx > 8 || dy > 8) detailPageDragEnd = true;
 }, { passive: true });
 detailPage.addEventListener('click', event => {
-  if (detailPageTouchEnd) return;
+  if (detailPageDragEnd) return;
   const size = event.target.dataset.size;
   const addDetailId = event.target.dataset.addDetail;
   const buyNowId = event.target.dataset.buyNow;
@@ -4683,6 +4688,16 @@ detailPage.addEventListener('click', event => {
   if (buyNowId) {
     addToCart(buyNowId, { size: event.target.dataset.selectedSize, qty: detailPage.querySelector('#detail-qty')?.value });
     renderCheckout();
+  }
+});
+
+detailPage.addEventListener('pointerup', (event) => {
+  if (detailPageDragEnd) return;
+  const target = event.target;
+  if (target.closest('[data-back-home]')) {
+    event.preventDefault();
+    event.stopPropagation();
+    showListing();
   }
 });
 
