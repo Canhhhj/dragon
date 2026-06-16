@@ -411,6 +411,10 @@ input,select,textarea{outline:none}
         <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" x2="7.01" y1="7" y2="7"/></svg>
         Mã giảm giá
       </button>
+      <button class="nav-item" data-page="super-sale" onclick="goPage('super-sale')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        Siêu khuyến mãi
+      </button>
       <button class="nav-item" data-page="brands" onclick="goPage('brands')">
         <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-5 10 5-10 5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         Hãng giày
@@ -688,6 +692,30 @@ input,select,textarea{outline:none}
     </div>
     <!-- End Brand Management Page -->
 
+      <!-- ===== SUPER SALE ===== -->
+      <div class="apage" id="page-super-sale">
+        <h2 class="section-title" style="margin-bottom:16px">⚡ Siêu khuyến mãi</h2>
+        <div class="two-col">
+          <div class="acard">
+            <div class="acard-head"><div class="acard-title">Chọn sản phẩm hiển thị</div></div>
+            <div style="padding:18px">
+              <div style="color:var(--muted);font-size:13px;margin-bottom:12px">Tối đa 8 sản phẩm. Các sản phẩm đã chọn sẽ hiện ở mục <strong>Siêu Khuyến Mãi</strong> trên trang chủ website.</div>
+              <div class="tbl-wrap"><table class="atable"><thead><tr><th style="width:28px">Chọn</th><th>Sản phẩm</th><th>Giá bán</th><th>Trạng thái</th></tr></thead><tbody id="super-sale-body"></tbody></table></div>
+              <div style="display:flex;justify-content:flex-end;margin-top:10px">
+                <button class="btn primary" onclick="saveSuperSale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Lưu cài đặt</button>
+              </div>
+            </div>
+          </div>
+          <div class="acard">
+            <div class="acard-head"><div class="acard-title">Đang hiển thị</div></div>
+            <div style="padding:18px">
+              <div id="super-sale-preview" class="product-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))"></div>
+              <div id="super-sale-empty" class="empty" style="display:none"><p>Chưa chọn sản phẩm nào.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ===== PROMO CODES ===== -->
       <div class="apage" id="page-promo">
         <div class="two-col">
@@ -895,11 +923,84 @@ let promos = JSON.parse(localStorage.getItem('da_promos')||'null') || [
 ];
 function savePromos(){ localStorage.setItem('da_promos',JSON.stringify(promos)); }
 
+// Super sale
+let superSaleIds = JSON.parse(localStorage.getItem('da_super_sale_ids')||'null') || [];
+function saveSuperSaleIds(){ localStorage.setItem('da_super_sale_ids',JSON.stringify(superSaleIds)); }
+
+function renderSuperSale(){
+  const tb=document.getElementById('super-sale-body'); if(!tb) return;
+  const selected = new Set(superSaleIds);
+  tb.innerHTML = adminProds.map(p => `
+    <tr>
+      <td><input type="checkbox" ${selected.has(String(p.id))?'checked':''} onchange="toggleSuperSale('${p.id}', this.checked)"/></td>
+      <td><div style="display:flex;align-items:center;gap:11px">
+        <div class="prod-img-cell">${p.img?`<img src="${p.img}" alt="" onerror="this.style.display='none'"/>`:'👟'}</div>
+        <div><div style="font-weight:600;color:#fff;margin-bottom:2px">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.desc||''}</div></div>
+      </div></td>
+      <td style="color:var(--red);font-weight:700;white-space:nowrap">${fmtM(p.price)}</td>
+      <td>${p.status==='soldout'?'<span class="sbadge cancelled">Hết hàng</span>':p.status==='preorder'?'<span class="sbadge processing">Đặt trước</span>':'<span class="sbadge done">Còn hàng</span>'}</td>
+    </tr>
+  `).join('');
+  renderSuperSalePreview();
+}
+
+function toggleSuperSale(id, checked){
+  id = String(id);
+  if(checked){
+    if(!superSaleIds.includes(id)) superSaleIds.push(id);
+  } else {
+    superSaleIds = superSaleIds.filter(x => x !== id);
+  }
+  saveSuperSaleIds();
+  renderSuperSalePreview();
+}
+
+function saveSuperSale(){
+  saveSuperSaleIds();
+  toast('Đã lưu cài đặt siêu khuyến mãi','success');
+  syncSuperSaleToWebsite();
+}
+
+function renderSuperSalePreview(){
+  const preview = document.getElementById('super-sale-preview');
+  const empty = document.getElementById('super-sale-empty');
+  if(!preview || !empty) return;
+  const items = adminProds.filter(p => superSaleIds.includes(String(p.id))).slice(0,8);
+  if(!items.length){
+    preview.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  preview.innerHTML = items.map(p => `
+    <div class="product-card">
+      <div class="product-img">
+        <img src="${p.img}" alt="${p.name}" onerror="this.src='https://placehold.co/300x300/f8f8f8/ccc?text=Giay'"/>
+        ${p.soldOut ? '<span class="badge-soldout">Hết hàng</span>' : ''}
+        ${p.discount > 0 ? `<span class="badge-sale">-${p.discount}%</span>` : ''}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">
+          ${p.price ? `<span class="price-new">${fmtM(p.price)}</span>` : '<span class="price-soldout">Liên hệ</span>'}
+          ${p.oldPrice > p.price ? `<span class="price-old">${fmtM(p.oldPrice)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function syncSuperSaleToWebsite(){
+  const s=getState();
+  s.superSaleProductIds = superSaleIds;
+  localStorage.setItem('dragon_state',JSON.stringify(s));
+}
+
 // ============================================================
 // NAVIGATION
 // ============================================================
-const pageMap={dashboard:'Dashboard',banner:'Banner & Logo',products:'Sản phẩm',promo:'Mã giảm giá',orders:'Đơn hàng',customers:'Khách hàng',settings:'Cài đặt',brands:'Hãng giày'};
-const subMap={dashboard:'Tổng quan',banner:'Nội dung website',products:'Nội dung website',promo:'Nội dung website',orders:'Kinh doanh',customers:'Kinh doanh',settings:'Hệ thống',brands:'Nội dung website'};
+const pageMap={dashboard:'Dashboard',banner:'Banner & Logo',products:'Sản phẩm',promo:'Mã giảm giá','super-sale':'Siêu khuyến mãi',orders:'Đơn hàng',customers:'Khách hàng',settings:'Cài đặt',brands:'Hãng giày'};
+const subMap={dashboard:'Tổng quan',banner:'Nội dung website',products:'Nội dung website',promo:'Nội dung website','super-sale':'Nội dung website',orders:'Kinh doanh',customers:'Kinh doanh',settings:'Hệ thống',brands:'Nội dung website'};
 
 function goPage(pg){
   document.querySelectorAll('.apage').forEach(p=>p.classList.remove('active'));
@@ -913,6 +1014,7 @@ function goPage(pg){
   if(pg==='orders') renderOrders();
   if(pg==='customers') renderCustomers();
   if(pg==='promo') renderPromos();
+  if(pg==='super-sale') renderSuperSale();
   if(pg==='banner') loadBannerSettings();
   if(pg==='brands') renderBrands();
 }

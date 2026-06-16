@@ -320,9 +320,21 @@ window.websiteIntegration = {
       }[char]));
     };
 
-    // Filter products that are on sale (have discount > 0 or oldPrice > price) or are sold out
-    // Slice to show up to 8 items
-    const saleProducts = window.products.filter(p => p.discount > 0 || p.oldPrice > p.price || p.soldOut).slice(0, 8);
+    let saleProducts = [];
+    try {
+      const state = window.DragonState.getState();
+      const selectedIds = (state && state.superSaleProductIds) || [];
+      if (selectedIds.length) {
+        const byId = Object.fromEntries(window.products.map(p => [String(p.id), p]));
+        saleProducts = selectedIds.map(String).map(id => byId[id]).filter(Boolean).slice(0, 8);
+      }
+    } catch (e) {
+      // ignore and fallback below
+    }
+
+    if (!saleProducts.length) {
+      saleProducts = window.products.filter(p => p.discount > 0 || p.oldPrice > p.price || p.soldOut).slice(0, 8);
+    }
 
     if (saleProducts.length === 0) {
       saleGrid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 40px 0;">Không có sản phẩm khuyến mãi nào.</div>';
