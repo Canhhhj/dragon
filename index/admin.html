@@ -282,6 +282,22 @@ input,select,textarea{outline:none}
   display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
 .prod-img-cell img{width:100%;height:100%;object-fit:cover}
 
+/* ===== PREVIEW GRID / CARD ===== */
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.product-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;transition:transform var(--transition),box-shadow var(--transition)}
+.product-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.product-img{position:relative;aspect-ratio:1/1;background:#0f0f0f;overflow:hidden}
+.product-img img{width:100%;height:100%;object-fit:cover;display:block}
+.product-info{padding:10px 12px 12px}
+.product-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.product-price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.price-new{font-size:14px;font-weight:800;color:var(--red)}
+.price-old{font-size:12px;font-weight:600;color:var(--muted);text-decoration:line-through}
+.price-soldout{font-size:13px;color:var(--muted)}
+.badge-sale{position:absolute;top:8px;left:8px;background:rgba(229,57,53,0.92);color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;letter-spacing:.02em}
+.badge-soldout{position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.72);color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;backdrop-filter:blur(4px)}
+.badge-preorder{position:absolute;top:8px;right:8px;background:rgba(59,130,246,0.92);color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px}
+
 /* ===== WELCOME ===== */
 .welcome{background:linear-gradient(135deg,rgba(229,57,53,0.18),rgba(229,57,53,0.06));
   border:1px solid rgba(229,57,53,0.2);border-radius:var(--radius);padding:18px 22px;
@@ -1059,55 +1075,6 @@ function renderSuperSalePreview(){
       </div>
     </div>
   `}).join('');
-}
-
-function syncSuperSaleToWebsite(){
-  const s=getState();
-  s.superSaleProductIds = superSaleIds;
-  localStorage.setItem('dragon_state',JSON.stringify(s));
-}
-
-function saveSuperSale(){
-  saveSuperSaleIds();
-  toast('Đã lưu cài đặt siêu khuyến mãi','success');
-  syncSuperSaleToWebsite();
-}
-
-function renderSuperSalePreview(){
-  const preview = document.getElementById('super-sale-preview');
-  const empty = document.getElementById('super-sale-empty');
-  if(!preview || !empty) return;
-  const items = adminProds.filter(p => superSaleIds.some(x => x.name === p.name)).slice(0,10);
-  if(!items.length){
-    preview.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-  preview.innerHTML = items.map(p => {
-    const discount = getSuperSaleMeta(p.name);
-    return `
-    <div class="product-card">
-      <div class="product-img">
-        <img src="${p.img}" alt="${p.name}" onerror="this.src='https://placehold.co/300x300/f8f8f8/ccc?text=Giay'"/>
-        ${p.soldOut ? '<span class="badge-soldout">Hết hàng</span>' : ''}
-        ${discount > 0 ? `<span class="badge-sale">-${discount}%</span>` : ''}
-      </div>
-      <div class="product-info">
-        <div class="product-name">${p.name}</div>
-        <div class="product-price">
-          ${p.price ? `<span class="price-new">${fmtM(p.price)}</span>` : '<span class="price-soldout">Liên hệ</span>'}
-          ${p.oldPrice > p.price ? `<span class="price-old">${fmtM(p.oldPrice)}</span>` : ''}
-        </div>
-      </div>
-    </div>
-  `}).join('');
-}
-
-function syncSuperSaleToWebsite(){
-  const s=getState();
-  s.superSaleProductIds = superSaleIds;
-  localStorage.setItem('dragon_state',JSON.stringify(s));
 }
 
 // ============================================================

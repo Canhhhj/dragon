@@ -327,12 +327,12 @@ window.websiteIntegration = {
       let selectedIds = (state && state.superSaleProductIds) || [];
       if (selectedIds.length) {
         if (typeof selectedIds[0] === 'string') {
-          selectedIds = selectedIds.map(id => ({ id: String(id), discount: 0 }));
+          selectedIds = selectedIds.map(name => ({ name: String(name), discount: 0 }));
         }
-        const byId = Object.fromEntries(window.products.map(p => [String(p.id), p]));
-        saleProducts = selectedIds.map(item => byId[String(item.id)]).filter(Boolean).slice(0, 10);
+        const byName = Object.fromEntries(window.products.map(p => [String(p.name), p]));
+        saleProducts = selectedIds.map(item => byName[String(item.name)]).filter(Boolean).slice(0, 10);
         selectedIds.forEach(item => {
-          saleDiscounts[String(item.id)] = Number(item.discount) || 0;
+          saleDiscounts[String(item.name)] = Number(item.discount) || 0;
         });
       }
     } catch (e) {
@@ -350,7 +350,7 @@ window.websiteIntegration = {
 
     let html = '';
     saleProducts.forEach(p => {
-      const discount = saleDiscounts[String(p.id)] || p.discount || 0;
+      const discount = saleDiscounts[p.name] || p.discount || 0;
       const salePrice = discount > 0 ? Math.round(p.price * (1 - discount / 100)) : p.price;
       html += `
         <div class="product-card" data-id="${p.id}">
