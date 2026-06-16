@@ -1,0 +1,14 @@
+{
+  "name": "dragon-activiti",
+  "version": "1.0.0",
+  "description": "Dragon Activiti - Giày chính hãng thể thao nam nữ",
+  "private": true,
+  "scripts": {
+    "dev": "http-server index -p 8080 -c-1 --silent",
+    "dev:web": "http-server index -p 8082 -c-1 --silent",
+    "dev:admin": "http-server index -p 8083 -c-1 --silent"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}

@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dragon Activiti – Quản Trị</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --red:#e53935;--red-dark:#c62828;--gold:#f5c518;
+  --bg:#0d0d0d;--surface:#161616;--surface2:#1e1e1e;--surface3:#252525;
+  --border:rgba(255,255,255,0.08);--text:#f0f0f0;--muted:#777;
+  --green:#22c55e;--blue:#3b82f6;--orange:#f97316;--purple:#a855f7;
+  --radius:14px;--radius-sm:8px;--shadow:0 8px 32px rgba(0,0,0,0.5);
+  --sidebar-w:260px;--transition:0.2s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+button,input,select,textarea{font:inherit}
+input,select,textarea{outline:none}
+
+/* ===== LOGIN ===== */
+#login-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 100% 100% at 50% 50%,#1a0505 0%,#090909 100%);overflow:hidden}
+#login-screen::before{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(229,57,53,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(229,57,53,0.03) 1px,transparent 1px);
+  background-size:44px 44px;animation:gpan 25s linear infinite;pointer-events:none}
+@keyframes gpan{from{background-position:0 0}to{background-position:44px 44px}}
+.login-wrap{position:relative;z-index:2;width:100%;max-width:440px;padding:16px}
+.login-card{background:linear-gradient(145deg,rgba(255,255,255,0.07),rgba(255,255,255,0.02));
+  border:1px solid rgba(255,255,255,0.12);border-radius:24px;padding:44px 40px;
+  box-shadow:0 40px 100px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter:blur(20px);animation:card-in 0.5s cubic-bezier(0.22,1,0.36,1)}
+@keyframes card-in{from{opacity:0;transform:translateY(24px) scale(0.97)}to{opacity:1;transform:none}}
+.login-logo{display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:28px}
+.login-mark{width:52px;height:52px;border-radius:16px;
+  background:linear-gradient(145deg,var(--red),#b71c1c);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;
+  box-shadow:0 8px 24px rgba(229,57,53,0.5),inset 0 0 0 2px rgba(255,255,255,0.15)}
+.login-brand strong{display:block;font-size:20px;font-weight:800;color:#fff}
+.login-brand strong span{color:var(--gold)}
+.login-brand em{font-style:normal;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.login-title{text-align:center;margin-bottom:28px}
+.login-title h2{font-size:21px;font-weight:700;color:#fff;margin-bottom:4px}
+.login-title p{font-size:13px;color:var(--muted)}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.inp-wrap{position:relative}
+.inp-wrap svg.fi{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);pointer-events:none;transition:color var(--transition)}
+.inp-wrap input{width:100%;padding:13px 14px 13px 42px;background:rgba(255,255,255,0.05);
+  border:1.5px solid rgba(255,255,255,0.1);border-radius:var(--radius-sm);
+  color:#fff;font-size:14px;transition:border-color var(--transition),background var(--transition)}
+.inp-wrap input:focus{border-color:var(--red);background:rgba(229,57,53,0.06)}
+.inp-wrap input::placeholder{color:rgba(255,255,255,0.22)}
+.inp-wrap .tpw{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;
+  display:flex;align-items:center;transition:color var(--transition)}
+.inp-wrap .tpw:hover{color:#fff}
+.inp-wrap .tpw svg{width:16px;height:16px}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--red),#c62828);
+  border:none;border-radius:var(--radius-sm);color:#fff;font-size:15px;font-weight:700;
+  cursor:pointer;margin-top:8px;transition:transform var(--transition),box-shadow var(--transition);
+  box-shadow:0 6px 20px rgba(229,57,53,0.4);display:flex;align-items:center;justify-content:center;gap:10px;min-height:50px}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(229,57,53,0.5)}
+.login-btn:active{transform:none}
+.login-err{display:none;background:rgba(229,57,53,0.12);border:1px solid rgba(229,57,53,0.35);
+  border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:#ff8a80;margin-bottom:12px;
+  align-items:center;gap:8px}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.back-site{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:20px;font-size:12px;color:var(--muted);transition:color var(--transition)}
+.back-site:hover{color:#fff}
+.back-site svg{width:14px;height:14px}
+
+/* ===== SHELL ===== */
+#admin-shell{display:none;min-height:100vh}
+#admin-shell.visible{display:flex}
+
+/* ===== SIDEBAR ===== */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;
+  overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent;
+  transition:transform var(--transition)}
+.sidebar::-webkit-scrollbar{width:3px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:99px}
+.sb-logo{padding:18px 18px 14px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--border)}
+.sb-mark{width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(145deg,var(--red),#b71c1c);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;
+  box-shadow:0 4px 14px rgba(229,57,53,0.4);flex-shrink:0}
+.sb-brand strong{display:block;font-size:15px;font-weight:800;color:#fff}
+.sb-brand strong span{color:var(--gold)}
+.sb-brand em{font-style:normal;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.sb-user{padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--red),#ff8a80);
+  display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;flex-shrink:0}
+.sb-uinfo strong{display:block;font-size:13px;font-weight:700;color:#fff}
+.sb-uinfo span{font-size:11px;color:var(--green);font-weight:600}
+.nav-sec{padding:10px 10px 4px;flex:1}
+.nav-lbl{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(255,255,255,0.28);padding:8px 10px 4px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--radius-sm);
+  cursor:pointer;margin-bottom:2px;color:rgba(255,255,255,0.55);font-size:13.5px;font-weight:500;
+  border:none;background:none;width:100%;text-align:left;transition:background var(--transition),color var(--transition)}
+.nav-item:hover{background:rgba(255,255,255,0.06);color:#fff}
+.nav-item.active{background:linear-gradient(135deg,rgba(229,57,53,0.22),rgba(229,57,53,0.08));
+  color:#fff;font-weight:600;border:1px solid rgba(229,57,53,0.22)}
+.nav-item.active .ni{color:var(--red)}
+.ni{width:19px;height:19px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+.sb-foot{padding:10px;border-top:1px solid var(--border)}
+.logout-btn{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:var(--radius-sm);
+  cursor:pointer;width:100%;background:none;border:none;color:rgba(255,255,255,0.45);
+  font-size:13px;font-weight:500;transition:background var(--transition),color var(--transition)}
+.logout-btn:hover{background:rgba(229,57,53,0.1);color:var(--red)}
+.logout-btn svg{width:17px;height:17px}
+
+/* ===== MAIN ===== */
+.admin-main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.admin-topbar{position:sticky;top:0;z-index:50;background:rgba(13,13,13,0.88);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+  padding:0 22px;height:58px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.tb-left{display:flex;align-items:center;gap:12px}
+.pg-title{font-size:15px;font-weight:700;color:#fff}
+.pg-bc{font-size:11px;color:var(--muted)}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-btn{width:36px;height:36px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);color:rgba(255,255,255,0.65);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);position:relative}
+.tb-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+.tb-btn svg{width:17px;height:17px}
+.ndot{position:absolute;top:7px;right:7px;width:6px;height:6px;background:var(--red);border-radius:50%;border:1.5px solid var(--bg)}
+.view-web{display:flex;align-items:center;gap:6px;padding:7px 14px;
+  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:999px;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,0.75);cursor:pointer;transition:all var(--transition)}
+.view-web:hover{background:rgba(255,255,255,0.12);color:#fff}
+.view-web svg{width:13px;height:13px}
+.admin-content{padding:22px;flex:1}
+
+/* ===== PAGES ===== */
+.apage{display:none;animation:fadein .3s ease}
+.apage.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ===== CARDS ===== */
+.acard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:18px}
+.acard-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.acard-title{font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.acard-title svg{width:15px;height:15px;color:var(--red);flex-shrink:0}
+
+/* ===== STATS ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;position:relative;overflow:hidden;transition:transform var(--transition),box-shadow var(--transition)}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.stat-icon svg{width:19px;height:19px}
+.stat-card.red .stat-icon{background:rgba(229,57,53,0.15);color:var(--red)}
+.stat-card.green .stat-icon{background:rgba(34,197,94,0.15);color:var(--green)}
+.stat-card.blue .stat-icon{background:rgba(59,130,246,0.15);color:var(--blue)}
+.stat-card.gold .stat-icon{background:rgba(245,197,24,0.15);color:var(--gold)}
+.stat-val{font-size:24px;font-weight:800;color:#fff;letter-spacing:-.03em;line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--muted)}
+.stat-delta{position:absolute;top:14px;right:14px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px}
+.stat-delta.up{background:rgba(34,197,94,0.15);color:var(--green)}
+.stat-delta.dn{background:rgba(229,57,53,0.15);color:var(--red)}
+
+/* ===== TWO-COL ===== */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+/* ===== TABLE ===== */
+.tbl-wrap{overflow-x:auto}
+.atable{width:100%;border-collapse:collapse;font-size:13px}
+.atable th{text-align:left;padding:9px 14px;font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(255,255,255,0.38);background:rgba(255,255,255,0.02);
+  border-bottom:1px solid var(--border);white-space:nowrap}
+.atable td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);
+  color:rgba(255,255,255,0.8);vertical-align:middle}
+.atable tr:last-child td{border-bottom:none}
+.atable tr:hover td{background:rgba(255,255,255,0.025)}
+
+/* ===== STATUS ===== */
+.sbadge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700}
+.sbadge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.sbadge.new{background:rgba(59,130,246,0.15);color:#60a5fa}
+.sbadge.processing{background:rgba(245,197,24,0.15);color:#fbbf24}
+.sbadge.shipped{background:rgba(168,85,247,0.15);color:#c084fc}
+.sbadge.done{background:rgba(34,197,94,0.15);color:var(--green)}
+.sbadge.cancelled{background:rgba(229,57,53,0.15);color:#f87171}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:600;cursor:pointer;border:none;transition:transform var(--transition),box-shadow var(--transition),background var(--transition)}
+.btn.primary{background:linear-gradient(135deg,var(--red),#c62828);color:#fff;box-shadow:0 4px 14px rgba(229,57,53,0.3)}
+.btn.primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(229,57,53,0.4)}
+.btn.ghost{background:rgba(255,255,255,0.06);border:1px solid var(--border);color:rgba(255,255,255,0.7)}
+.btn.ghost:hover{background:rgba(255,255,255,0.1);color:#fff}
+.btn.danger{background:rgba(229,57,53,0.15);color:#f87171;border:1px solid rgba(229,57,53,0.2)}
+.btn.danger:hover{background:var(--red);color:#fff}
+.btn svg{width:13px;height:13px}
+
+/* ===== SEARCH BAR ===== */
+.sbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sinp-wrap{position:relative;flex:1;min-width:200px}
+.sinp-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted);pointer-events:none}
+.sinp-wrap input{width:100%;padding:8px 12px 8px 34px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:#fff;font-size:13px;transition:border-color var(--transition)}
+.sinp-wrap input:focus{border-color:var(--red)}
+.sinp-wrap input::placeholder{color:var(--muted)}
+.fsel{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:rgba(255,255,255,0.75);font-size:13px;cursor:pointer}
+.fsel:focus{border-color:var(--red)}
+
+/* ===== FORM ===== */
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.frow.one{grid-template-columns:1fr}
+.ffld label{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ffld input,.ffld select,.ffld textarea{width:100%;padding:9px 11px;background:var(--surface2);
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);color:#fff;font-size:13px;transition:border-color var(--transition)}
+.ffld input:focus,.ffld select:focus,.ffld textarea:focus{border-color:var(--red)}
+.ffld textarea{resize:vertical;min-height:80px}
+.ffld input::placeholder,.ffld textarea::placeholder{color:rgba(255,255,255,0.2)}
+.ffld select option{background:#1e1e1e;color:#fff}
+
+/* ===== IMAGE UPLOAD ===== */
+.img-upload{border:2px dashed rgba(255,255,255,0.15);border-radius:var(--radius-sm);
+  padding:24px;text-align:center;cursor:pointer;transition:border-color var(--transition),background var(--transition);
+  position:relative;overflow:hidden}
+.img-upload:hover{border-color:var(--red);background:rgba(229,57,53,0.05)}
+.img-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.img-upload-icon{font-size:32px;margin-bottom:8px}
+.img-upload p{font-size:12px;color:var(--muted)}
+.img-upload p strong{color:var(--red)}
+.img-preview{width:100%;max-height:200px;object-fit:contain;border-radius:6px;margin-top:10px;display:none}
+
+/* ===== TOGGLE ===== */
+.toggle{width:42px;height:24px;border-radius:12px;background:rgba(255,255,255,0.12);
+  position:relative;cursor:pointer;transition:background var(--transition);border:none;flex-shrink:0}
+.toggle.on{background:var(--green)}
+.toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;
+  top:3px;left:3px;transition:transform var(--transition);box-shadow:0 2px 6px rgba(0,0,0,0.3)}
+.toggle.on::after{transform:translateX(18px)}
+
+/* ===== SETTING ITEM ===== */
+.set-item{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px}
+.set-item-l strong{display:block;font-size:13px;font-weight:600;color:#fff;margin-bottom:2px}
+.set-item-l span{font-size:11px;color:var(--muted)}
+
+/* ===== ACTIVITY ===== */
+.act-list{padding:0 18px 16px}
+.act-item{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.act-txt{font-size:13px;color:rgba(255,255,255,0.72);line-height:1.5}
+.act-txt strong{color:#fff}
+.act-time{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ===== MINI CHART ===== */
+.mini-chart{display:flex;align-items:flex-end;gap:4px;height:50px}
+.bar{flex:1;border-radius:3px 3px 0 0;background:linear-gradient(180deg,var(--red),rgba(229,57,53,0.35));min-width:8px}
+.bar.today{background:linear-gradient(180deg,var(--gold),rgba(245,197,24,0.35))}
+
+/* ===== TOAST ===== */
+.toast-wrap{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+.toast-item{background:var(--surface2);border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-sm);
+  padding:11px 15px;font-size:13px;font-weight:500;color:#fff;box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:9px;animation:ti .3s ease;pointer-events:all;min-width:240px}
+@keyframes ti{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+.toast-item.success{border-left:3px solid var(--green)}
+.toast-item.error{border-left:3px solid var(--red)}
+.toast-item.info{border-left:3px solid var(--blue)}
+.toast-item svg{width:15px;height:15px;flex-shrink:0}
+.toast-item.success svg{color:var(--green)}
+.toast-item.error svg{color:var(--red)}
+.toast-item.info svg{color:var(--blue)}
+
+/* ===== PRODUCT IMG ROW ===== */
+.prod-img-cell{width:44px;height:44px;border-radius:8px;background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0}
+.prod-img-cell img{width:100%;height:100%;object-fit:cover}
+
+/* ===== WELCOME ===== */
+.welcome{background:linear-gradient(135deg,rgba(229,57,53,0.18),rgba(229,57,53,0.06));
+  border:1px solid rgba(229,57,53,0.2);border-radius:var(--radius);padding:18px 22px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.welcome h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:3px}
+.welcome p{font-size:13px;color:rgba(255,255,255,0.58)}
+.welcome-date strong{display:block;font-size:14px;font-weight:700;color:rgba(255,255,255,0.65)}
+.welcome-date span{font-size:11px;color:var(--muted)}
+
+/* ===== EMPTY ===== */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty svg{width:40px;height:40px;opacity:.25;margin-bottom:10px}
+
+/* ===== STATUS SELECT ===== */
+.stsel{padding:4px 9px;border-radius:99px;border:none;font-size:11px;font-weight:700;cursor:pointer;
+  background:rgba(59,130,246,0.15);color:#60a5fa}
+
+/* ===== BANNER PREVIEW ===== */
+.banner-preview{border-radius:var(--radius-sm);overflow:hidden;margin-bottom:10px;
+  background:linear-gradient(135deg,#0c0c0c,#1a1a1a);min-height:120px;display:flex;align-items:center;justify-content:center;position:relative}
+.banner-preview img{width:100%;object-fit:cover;display:none}
+.banner-placeholder{text-align:center;color:var(--muted)}
+.banner-placeholder svg{width:36px;height:36px;opacity:.3;margin-bottom:8px}
+
+/* ===== COLOR SCHEME ===== */
+.color-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.color-btn{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:transform .15s}
+.color-btn:hover{transform:scale(1.1)}
+.color-btn.selected{border-color:#fff}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:99px}
+
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN ========== -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-mark">DA</div>
+        <div class="login-brand">
+          <strong>Dragon <span>Activiti</span></strong>
+          <em>Quản trị hệ thống</em>
+        </div>
+      </div>
+      <div class="login-title">
+        <h2>🔐 Đăng nhập Admin</h2>
+        <p>Nhập tài khoản và mật khẩu để tiếp tục</p>
+      </div>
+      <div class="login-err" id="lerr">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Tài khoản hoặc mật khẩu không đúng!
+      </div>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="l-user">Tài khoản</label>
+          <div class="inp-wrap">
+            <input type="text" id="l-user" placeholder="Nhập tên tài khoản" autocomplete="username" required/>
+            <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="l-pw">Mật khẩu</label>
+          <div class="inp-wrap">
+            <input type="password" id="l-pw" placeholder="Nhập mật khẩu" autocomplete="current-password" required/>
+            <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <button type="button" class="tpw" id="tpw-btn">
+              <svg id="eye-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="login-btn" id="login-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+          Đăng nhập
+        </button>
+      </form>
+      <a href="./index.html" class="back-site">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        Quay lại website
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ADMIN SHELL ========== -->
+<div id="admin-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-mark">DA</div>
+      <div class="sb-brand">
+        <strong>Dragon <span>Activiti</span></strong>
+        <em>Admin Panel</em>
+      </div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-av">A</div>
+      <div class="sb-uinfo">
+        <strong id="sb-name">Admin</strong>
+        <span>● Trực tuyến</span>
+      </div>
+    </div>
+    <nav class="nav-sec">
+      <div class="nav-lbl">Tổng quan</div>
+      <button class="nav-item active" data-page="dashboard" onclick="goPage('dashboard')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        Dashboard
+      </button>
+
+      <div class="nav-lbl" style="margin-top:8px">Nội dung website</div>
+      <button class="nav-item" data-page="banner" onclick="goPage('banner')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        Banner & Logo
+      </button>
+      <button class="nav-item" data-page="products" onclick="goPage('products')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        Sản phẩm
+      </button>
+      <button class="nav-item" data-page="promo" onclick="goPage('promo')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" x2="7.01" y1="7" y2="7"/></svg>
+        Mã giảm giá
+      </button>
+      <button class="nav-item" data-page="brands" onclick="goPage('brands')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-5 10 5-10 5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Hãng giày
+      </button>
+
+      <div class="nav-lbl" style="margin-top:8px">Kinh doanh</div>
+      <button class="nav-item" data-page="orders" onclick="goPage('orders')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Đơn hàng
+        <span class="nav-badge" id="badge-orders">0</span>
+      </button>
+      <button class="nav-item" data-page="customers" onclick="goPage('customers')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Khách hàng
+      </button>
+
+      <div class="nav-lbl" style="margin-top:8px">Hệ thống</div>
+      <button class="nav-item" data-page="settings" onclick="goPage('settings')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        Cài đặt
+      </button>
+
+    </nav>
+    <div class="sb-foot">
+      <button class="logout-btn" id="logout-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+        Đăng xuất
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN AREA -->
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div class="tb-left">
+        <button class="tb-btn" onclick="document.getElementById('sidebar').classList.toggle('open')" title="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="pg-title" id="pg-title">Dashboard</div>
+          <div class="pg-bc">Dragon Activiti › <span id="pg-sub">Tổng quan</span></div>
+        </div>
+      </div>
+      <div class="tb-right">
+        <button class="tb-btn" title="Thông báo" onclick="toast('Không có thông báo mới','info')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="ndot"></span>
+        </button>
+        <a href="./index.html" target="_blank" class="view-web">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+          Xem website
+        </a>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="apage active" id="page-dashboard">
+        <div class="welcome">
+          <div>
+            <h2>Xin chào, <span id="wname">Admin</span>! 👋</h2>
+            <p>Tổng quan hoạt động cửa hàng Dragon Activiti.</p>
+          </div>
+          <div class="welcome-date">
+            <span>Hôm nay</span>
+            <strong id="today-dt">–</strong>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card red">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+            <div class="stat-val" id="st-orders">0</div>
+            <div class="stat-lbl">Tổng đơn hàng</div>
+            <span class="stat-delta up">+12%</span>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <div class="stat-val" id="st-rev">0đ</div>
+            <div class="stat-lbl">Doanh thu</div>
+            <span class="stat-delta up">+8%</span>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+            <div class="stat-val" id="st-custs">0</div>
+            <div class="stat-lbl">Khách hàng</div>
+            <span class="stat-delta up">+5%</span>
+          </div>
+          <div class="stat-card gold">
+            <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+            <div class="stat-val" id="st-prods">0</div>
+            <div class="stat-lbl">Sản phẩm</div>
+            <span class="stat-delta up">+2</span>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="acard">
+            <div class="acard-head">
+              <div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Doanh thu 7 ngày</div>
+            </div>
+            <div style="padding:18px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:11px;color:var(--muted)">Triệu VNĐ</span><span style="font-size:11px;color:var(--gold);font-weight:600">Hôm nay ▲</span></div>
+              <div class="mini-chart">
+                <div class="bar" style="height:40%"></div><div class="bar" style="height:60%"></div>
+                <div class="bar" style="height:35%"></div><div class="bar" style="height:75%"></div>
+                <div class="bar" style="height:50%"></div><div class="bar" style="height:82%"></div>
+                <div class="bar today" style="height:92%"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:5px">
+                <span style="font-size:10px;color:var(--muted)">T2</span><span style="font-size:10px;color:var(--muted)">T3</span>
+                <span style="font-size:10px;color:var(--muted)">T4</span><span style="font-size:10px;color:var(--muted)">T5</span>
+                <span style="font-size:10px;color:var(--muted)">T6</span><span style="font-size:10px;color:var(--muted)">T7</span>
+                <span style="font-size:10px;color:var(--gold);font-weight:700">CN</span>
+              </div>
+            </div>
+          </div>
+          <div class="acard">
+            <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Hoạt động gần đây</div></div>
+            <div class="act-list">
+              <div class="act-item"><div class="act-dot" style="background:var(--green)"></div><div><div class="act-txt"><strong>Đơn hàng #1042</strong> đã xác nhận</div><div class="act-time">2 phút trước</div></div></div>
+              <div class="act-item"><div class="act-dot" style="background:var(--blue)"></div><div><div class="act-txt">Khách <strong>Nguyễn Văn A</strong> đặt đơn mới</div><div class="act-time">15 phút trước</div></div></div>
+              <div class="act-item"><div class="act-dot" style="background:var(--gold)"></div><div><div class="act-txt"><strong>Nike Air Max 270</strong> sắp hết hàng</div><div class="act-time">1 giờ trước</div></div></div>
+              <div class="act-item"><div class="act-dot" style="background:var(--red)"></div><div><div class="act-txt"><strong>Đơn #1039</strong> bị huỷ bởi khách</div><div class="act-time">3 giờ trước</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Đơn hàng mới nhất</div>
+            <button class="btn ghost" onclick="goPage('orders')">Xem tất cả</button>
+          </div>
+          <div class="tbl-wrap"><table class="atable"><thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thời gian</th></tr></thead><tbody id="dash-orders"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ===== BANNER & LOGO ===== -->
+      <div class="apage" id="page-banner">
+        <div class="two-col">
+          <!-- HERO BANNER -->
+          <div class="acard">
+            <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>Ảnh Hero Banner</div></div>
+            <div style="padding:18px">
+              <div class="banner-preview" id="hero-preview">
+                <img id="hero-img-preview" src="" alt=""/>
+                <div class="banner-placeholder" id="hero-placeholder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><p>Chưa có ảnh hero</p></div>
+              </div>
+              <div class="img-upload" onclick="document.getElementById('hero-file').click()">
+                <input type="file" id="hero-file" accept="image/*" style="display:none" onchange="handleImgUpload('hero',this)"/>
+                <div class="img-upload-icon">🖼️</div>
+                <p>Kéo thả hoặc <strong>click để chọn ảnh hero</strong></p>
+                <p style="margin-top:4px;font-size:11px">PNG, JPG, WebP · Tối ưu: 1200×600px</p>
+              </div>
+              <div style="margin-top:14px">
+                <div class="frow one"><div class="ffld"><label>URL ảnh hero (hoặc nhập link trực tiếp)</label><input type="text" id="hero-url" placeholder="https://..." oninput="previewFromUrl('hero',this.value)"/></div></div>
+                <div class="frow"><div class="ffld"><label>Tiêu đề H1</label><input type="text" id="hero-h1" placeholder="Giày Chính Hãng"/></div><div class="ffld"><label>Phụ đề</label><input type="text" id="hero-sub" placeholder="Uy Tín #1 Việt Nam"/></div></div>
+                <div class="frow one"><div class="ffld"><label>Mô tả hero</label><textarea id="hero-desc" rows="2" placeholder="Hàng mới mỗi tuần..."></textarea></div></div>
+              </div>
+              <button class="btn primary" style="width:100%;margin-top:10px;justify-content:center" onclick="saveBanner('hero')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Lưu thay đổi Hero Banner
+              </button>
+            </div>
+          </div>
+
+          <!-- LOGO & BRAND -->
+          <div>
+            <div class="acard">
+              <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>Logo & Thương hiệu</div></div>
+              <div style="padding:18px">
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;background:var(--surface2);border-radius:var(--radius-sm);padding:14px">
+                  <div id="logo-mark-preview" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(145deg,#e53935,#b71c1c);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;box-shadow:0 4px 14px rgba(229,57,53,0.4)">DA</div>
+                  <div>
+                    <div id="logo-name-preview" style="font-size:16px;font-weight:800;color:#fff">Dragon <span style="color:var(--gold)">Activiti</span></div>
+                    <div style="font-size:11px;color:var(--muted)">Xem trước logo</div>
+                  </div>
+                </div>
+                <div class="frow"><div class="ffld"><label>Chữ tắt (ký hiệu)</label><input type="text" id="logo-abbr" placeholder="DA" maxlength="3" value="DA" oninput="document.getElementById('logo-mark-preview').textContent=this.value||'DA'"/></div><div class="ffld"><label>Màu nền logo</label><select id="logo-color" onchange="updateLogoColor()"><option value="#e53935">Đỏ (mặc định)</option><option value="#1a237e">Xanh dương</option><option value="#2e7d32">Xanh lá</option><option value="#e65100">Cam</option><option value="#4a148c">Tím</option><option value="#111">Đen</option></select></div></div>
+                <div class="frow"><div class="ffld"><label>Tên thương hiệu</label><input type="text" id="brand-name" placeholder="Dragon" value="Dragon"/></div><div class="ffld"><label>Phần highlight</label><input type="text" id="brand-highlight" placeholder="Activiti" value="Activiti"/></div></div>
+                <button class="btn primary" style="width:100%;margin-top:6px;justify-content:center" onclick="saveLogo()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Lưu Logo
+                </button>
+              </div>
+            </div>
+            <div class="acard">
+              <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>Top Bar thông báo</div></div>
+              <div style="padding:18px">
+                <div class="frow one"><div class="ffld"><label>Nội dung topbar</label><input type="text" id="topbar-text" placeholder="Miễn phí vận chuyển đơn từ 500k" value="Miễn phí vận chuyển đơn từ 500k"/></div></div>
+                <div class="frow"><div class="ffld"><label>Mã coupon hiển thị</label><input type="text" id="topbar-code" placeholder="FS2026" value="FS2026"/></div><div class="ffld"><label>Màu nền topbar</label><select id="topbar-color"><option value="#1a1a1a">Tối (mặc định)</option><option value="#b71c1c">Đỏ</option><option value="#0a3d62">Xanh dương</option><option value="#1b5e20">Xanh lá</option></select></div></div>
+                <button class="btn primary" style="width:100%;margin-top:6px;justify-content:center" onclick="saveTopbar()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Lưu Topbar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PRODUCTS ===== -->
+      <div class="apage" id="page-products">
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>Quản lý sản phẩm</div>
+            <div class="sbar">
+              <div class="sinp-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" placeholder="Tìm sản phẩm..." id="prod-search" oninput="renderProducts()"/></div>
+              <select class="fsel" id="prod-brand" onchange="renderProducts()"><option value="all">Tất cả</option></select>
+              <button class="btn secondary" onclick="importFromWebsite()" style="border: 1px solid var(--border); margin-right: 6px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Nhập từ Website</button>
+              <button class="btn primary" onclick="showProdForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>Thêm sản phẩm</button>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table class="atable"><thead><tr><th>Sản phẩm</th><th>Thương hiệu</th><th>Giá bán</th><th>Giá gốc</th><th>Tồn kho</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="prod-body"></tbody></table></div>
+        </div>
+
+        <!-- PRODUCT FORM -->
+        <div class="acard" id="prod-form" style="display:none">
+          <div class="acard-head">
+            <div class="acard-title" id="pf-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>Thêm sản phẩm mới</div>
+            <button class="btn ghost" onclick="hideProdForm()">✕ Đóng</button>
+          </div>
+          <div style="padding:18px">
+            <div class="two-col" style="gap:18px;margin-bottom:0">
+              <!-- Left: Info -->
+              <div>
+                <div class="frow"><div class="ffld"><label>Tên sản phẩm *</label><input type="text" id="pf-name" placeholder="VD: Nike Air Max 270 White"/></div><div class="ffld"><label>Thương hiệu *</label><select id="pf-brand"></select></div></div>
+                <div class="frow"><div class="ffld"><label>Giá bán (VNĐ) *</label><input type="number" id="pf-price" placeholder="2500000"/></div><div class="ffld"><label>Giá gốc (VNĐ)</label><input type="number" id="pf-oldprice" placeholder="3200000"/></div></div>
+                <div class="frow"><div class="ffld"><label>Tồn kho</label><input type="number" id="pf-stock" placeholder="20"/></div><div class="ffld"><label>Trạng thái</label><select id="pf-status"><option value="available">Còn hàng</option><option value="soldout">Hết hàng</option><option value="preorder">Đặt trước</option></select></div></div>
+                <div class="frow one"><div class="ffld"><label>Mô tả ngắn</label><textarea id="pf-desc" rows="2" placeholder="Mô tả sản phẩm ngắn gọn..."></textarea></div></div>
+                <div class="frow one"><div class="ffld"><label>Chi tiết sản phẩm (mỗi dòng 1 mục)</label><textarea id="pf-details" rows="4" placeholder="Đế ngoài rubber cao su tổng hợp&#10;Lót giày êm ái&#10;Công nghệ Air Max&#10;Phù hợp chạy bộ, dạo phố"></textarea></div></div>
+                <div class="frow"><div class="ffld"><label>Sizes có sẵn (phân cách bằng dấu phẩy)</label><input type="text" id="pf-sizes" placeholder="38,39,40,41,42,43,44"/></div><div class="ffld"><label>Tags/Loại</label><input type="text" id="pf-tags" placeholder="chạy bộ, thể thao, streetwear"/></div></div>
+              </div>
+              <!-- Right: Image -->
+              <div>
+                <div class="ffld" style="margin-bottom:12px"><label>Ảnh sản phẩm chính</label>
+                  <div class="img-upload" id="pf-img-area" onclick="document.getElementById('pf-img-file').click()">
+                    <input type="file" id="pf-img-file" accept="image/*" style="display:none" onchange="handleProdImg(this)"/>
+                    <div id="pf-img-placeholder"><div class="img-upload-icon">📸</div><p>Click hoặc kéo thả ảnh sản phẩm</p><p style="font-size:11px;margin-top:4px">PNG, JPG, WebP · 300×300px+</p></div>
+                    <img id="pf-img-preview" class="img-preview" alt=""/>
+                  </div>
+                </div>
+                <div class="ffld" style="margin-bottom:12px"><label>Hoặc nhập URL ảnh</label><input type="text" id="pf-img-url" placeholder="https://..." oninput="previewProdImgFromUrl(this.value)"/></div>
+                <div class="ffld" style="margin-bottom:12px"><label>Ảnh phụ 2 (URL)</label><input type="text" id="pf-img2" placeholder="https://..."/></div>
+                <div class="ffld"><label>Ảnh phụ 3 (URL)</label><input type="text" id="pf-img3" placeholder="https://..."/></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+              <button class="btn primary" onclick="saveProduct()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Lưu sản phẩm</button>
+              <button class="btn ghost" onclick="hideProdForm()">Huỷ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <!-- Brand Management Page -->
+    <div class="apage" id="page-brands">
+      <h2 class="section-title" style="margin-bottom:16px">🏷️ Quản lý Hãng giày</h2>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn primary" onclick="openBrandModal()" style="display:flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+          Thêm hãng giày
+        </button>
+        <span style="color:var(--muted);font-size:13px" id="brand-count-info"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:10px 12px;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Logo</th>
+            <th style="text-align:left;padding:10px 12px;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Tên hãng</th>
+            <th style="text-align:left;padding:10px 12px;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Số sản phẩm</th>
+            <th style="text-align:right;padding:10px 12px;color:var(--muted);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Hành động</th>
+          </tr></thead>
+          <tbody id="brand-list"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- End Brand Management Page -->
+
+      <!-- ===== PROMO CODES ===== -->
+      <div class="apage" id="page-promo">
+        <div class="two-col">
+          <div class="acard">
+            <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" x2="7.01" y1="7" y2="7"/></svg>Mã giảm giá hiện tại</div></div>
+            <div style="padding:18px">
+              <div id="promo-list"></div>
+              <button class="btn ghost" style="width:100%;margin-top:10px;justify-content:center" onclick="document.getElementById('add-promo').style.display='block'">+ Thêm mã mới</button>
+            </div>
+          </div>
+          <div class="acard" id="add-promo" style="display:none">
+            <div class="acard-head"><div class="acard-title">Thêm mã giảm giá mới</div><button class="btn ghost" onclick="document.getElementById('add-promo').style.display='none'">✕</button></div>
+            <div style="padding:18px">
+              <div class="frow"><div class="ffld"><label>Mã coupon *</label><input type="text" id="np-code" placeholder="DRAGON20" style="text-transform:uppercase"/></div><div class="ffld"><label>Giảm (%)</label><input type="number" id="np-pct" placeholder="20" min="1" max="99"/></div></div>
+              <div class="frow"><div class="ffld"><label>Đơn tối thiểu (VNĐ)</label><input type="number" id="np-min" placeholder="500000"/></div><div class="ffld"><label>Hạn sử dụng</label><input type="date" id="np-exp"/></div></div>
+              <div class="frow one"><div class="ffld"><label>Mô tả</label><input type="text" id="np-desc" placeholder="Giảm 20% cho đơn từ 500k"/></div></div>
+              <button class="btn primary" style="width:100%;margin-top:8px;justify-content:center" onclick="addPromo()">Thêm mã</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ORDERS ===== -->
+      <div class="apage" id="page-orders">
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Quản lý đơn hàng</div>
+            <div class="sbar">
+              <div class="sinp-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" placeholder="Tìm đơn hàng..." id="ord-search" oninput="renderOrders()"/></div>
+              <select class="fsel" id="ord-status" onchange="renderOrders()"><option value="all">Tất cả</option><option value="new">Mới</option><option value="processing">Xử lý</option><option value="shipped">Đang giao</option><option value="done">Hoàn thành</option><option value="cancelled">Đã huỷ</option></select>
+            </div>
+          </div>
+          <div class="tbl-wrap"><table class="atable"><thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>SĐT</th><th>Địa chỉ</th><th>Sản phẩm</th><th>Tổng tiền</th><th>Trạng thái</th><th>Thời gian</th><th>Thao tác</th></tr></thead><tbody id="ord-body"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ===== CUSTOMERS ===== -->
+      <div class="apage" id="page-customers">
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Danh sách khách hàng</div>
+            <div class="sinp-wrap" style="max-width:260px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" placeholder="Tìm khách hàng..." id="cust-search" oninput="renderCustomers()"/></div>
+          </div>
+          <div class="tbl-wrap"><table class="atable"><thead><tr><th>Khách hàng</th><th>SĐT</th><th>Email</th><th>Địa chỉ</th><th>Số đơn</th><th>Tổng chi tiêu</th><th>Liên hệ</th></tr></thead><tbody id="cust-body"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ===== SETTINGS ===== -->
+      <div class="apage" id="page-settings">
+        <div class="two-col">
+          <div class="acard">
+            <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Thông tin tài khoản Admin</div></div>
+            <div style="padding:18px">
+              <div class="frow one"><div class="ffld"><label>Tên hiển thị</label><input type="text" id="set-name" value="Admin"/></div></div>
+              <div class="frow one"><div class="ffld"><label>Tài khoản đăng nhập</label><input type="text" id="set-user" readonly style="opacity:.45;cursor:not-allowed"/></div></div>
+              <div class="frow one"><div class="ffld"><label>Mật khẩu mới (để trống nếu không đổi)</label><input type="password" id="set-pw" placeholder="••••••••"/></div></div>
+              <div class="frow one"><div class="ffld"><label>Xác nhận mật khẩu mới</label><input type="password" id="set-pw2" placeholder="••••••••"/></div></div>
+              <button class="btn primary" style="width:100%;margin-top:8px;justify-content:center" onclick="saveSettings()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Lưu thông tin
+              </button>
+            </div>
+          </div>
+          <div class="acard">
+            <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Cài đặt website</div></div>
+            <div style="padding:16px">
+              <div class="set-item"><div class="set-item-l"><strong>Cho phép đặt hàng</strong><span>Chức năng giỏ hàng & mua</span></div><button class="toggle on" id="t-order" onclick="this.classList.toggle('on');toast('Đã lưu cài đặt','success')"></button></div>
+              <div class="set-item"><div class="set-item-l"><strong>Hiện banner khuyến mãi</strong><span>Promo bar trên trang chủ</span></div><button class="toggle on" id="t-promo" onclick="this.classList.toggle('on');toast('Đã lưu cài đặt','success')"></button></div>
+              <div class="set-item"><div class="set-item-l"><strong>Thông báo đơn hàng mới</strong><span>Alert khi có đơn từ web</span></div><button class="toggle on" id="t-notify" onclick="this.classList.toggle('on');toast('Đã lưu cài đặt','success')"></button></div>
+              <div class="set-item"><div class="set-item-l"><strong>Chế độ bảo trì</strong><span>Ẩn website với khách truy cập</span></div><button class="toggle" id="t-maintain" onclick="this.classList.toggle('on');toast('Đã lưu cài đặt','success')"></button></div>
+            </div>
+          </div>
+        </div>
+        <div class="acard">
+          <div class="acard-head"><div class="acard-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Thông tin cửa hàng</div></div>
+          <div style="padding:18px">
+            <div class="frow"><div class="ffld"><label>Tên cửa hàng</label><input type="text" id="si-name" value="Dragon Activiti"/></div><div class="ffld"><label>Hotline / Zalo</label><input type="text" id="si-phone" value="0329 342 286"/></div></div>
+            <div class="frow"><div class="ffld"><label>Link Zalo</label><input type="text" id="si-zalo" value="https://zalo.me/0329342286"/></div><div class="ffld"><label>Link Facebook</label><input type="text" id="si-fb" value="https://www.facebook.com/profile.php?id=61577026714785"/></div></div>
+            <div class="frow one"><div class="ffld"><label>Địa chỉ cửa hàng</label><input type="text" id="si-addr" placeholder="Địa chỉ cửa hàng..."/></div></div>
+            <button class="btn primary" style="margin-top:4px" onclick="saveStoreInfo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Lưu thông tin cửa hàng</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<div class="toast-wrap" id="tw"></div>
+
+<script src="data-bridge.js"></script>
+<script src="integration-test.js"></script>
+
+<script>
+// ============================================================
+// CONFIG & CREDENTIALS
+// ============================================================
+const DEFAULT_CREDS = { username:'admin', password:'dragon2024', display:'Admin' };
+
+function getCreds(){
+  return JSON.parse(localStorage.getItem('da_creds')||'null') || DEFAULT_CREDS;
+}
+function saveCreds(obj){ localStorage.setItem('da_creds', JSON.stringify(obj)); }
+
+// ============================================================
+// AUTH
+// ============================================================
+function checkSession(){
+  const s = sessionStorage.getItem('da_sess');
+  if(s){ const d=JSON.parse(s); enterAdmin(d.display||d.username); }
+}
+
+// Delay checkSession until all variables are initialized
+window.addEventListener('load', function() {
+  checkSession();
+});
+
+document.getElementById('tpw-btn').addEventListener('click',function(){
+  const inp = document.getElementById('l-pw');
+  const show = inp.type==='password';
+  inp.type = show?'text':'password';
+  document.getElementById('eye-svg').innerHTML = show
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>';
+});
+
+document.getElementById('login-form').addEventListener('submit',function(e){
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const user = document.getElementById('l-user').value.trim();
+  const pw   = document.getElementById('l-pw').value;
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Đang kiểm tra...';
+  btn.disabled=true;
+  setTimeout(()=>{
+    btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg> Đăng nhập';
+    btn.disabled=false;
+    const c = getCreds();
+    if(user===c.username && pw===c.password){
+      const err=document.getElementById('lerr'); err.style.display='none';
+      sessionStorage.setItem('da_sess',JSON.stringify({username:c.username,display:c.display||c.username}));
+      enterAdmin(c.display||c.username);
+    } else {
+      const err=document.getElementById('lerr');
+      err.style.display='flex'; err.style.animation='none';
+      void err.offsetWidth; err.style.animation='shake .4s ease';
+    }
+  },700);
+});
+
+function enterAdmin(name){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('admin-shell').classList.add('visible');
+  document.getElementById('sb-name').textContent=name;
+  document.getElementById('sb-av').textContent=(name||'A')[0].toUpperCase();
+  document.getElementById('wname').textContent=name;
+  document.getElementById('set-name').value=name;
+  document.getElementById('set-user').value=getCreds().username;
+  document.getElementById('today-dt').textContent=new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+  initAdmin();
+}
+
+document.getElementById('logout-btn').addEventListener('click',function(){
+  sessionStorage.removeItem('da_sess');
+  document.getElementById('admin-shell').classList.remove('visible');
+  document.getElementById('admin-shell').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('l-user').value='';
+  document.getElementById('l-pw').value='';
+});
+
+// ============================================================
+// WEBSITE DATA BRIDGE (localStorage sync)
+// ============================================================
+function getState(){ try{ return JSON.parse(localStorage.getItem('dragon_state')||'{}'); }catch{ return {}; } }
+function getOrders(){ return getState().orders||[]; }
+function getCustomers(){
+  const m={};
+  getOrders().forEach(o=>{
+    const k=o.phone||o.name; if(!k) return;
+    if(!m[k]) m[k]={name:o.name,phone:o.phone,email:o.email||'',address:o.address||'',orders:0,total:0};
+    m[k].orders++; m[k].total+=(o.total||0);
+  });
+  return Object.values(m);
+}
+
+// Order status
+function getOrdStatus(id){ return (JSON.parse(localStorage.getItem('da_ord_st')||'{}')||{})[id]||'new'; }
+function setOrdStatus(id,st){ const m=JSON.parse(localStorage.getItem('da_ord_st')||'{}'); m[id]=st; localStorage.setItem('da_ord_st',JSON.stringify(m)); }
+
+// Admin products
+let adminProds = JSON.parse(localStorage.getItem('da_prods')||'null') || [
+  {id:1,name:'Nike Air Max 270 White Black',brand:'Nike',price:3200000,oldPrice:4200000,stock:15,status:'available',img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80',desc:'Đế Air Max êm ái, phong cách streetwear',details:['Đế Air Max êm ái','Chất liệu lưới thoáng khí','Phù hợp chạy bộ & dạo phố'],sizes:'38,39,40,41,42,43,44',tags:'chạy bộ, thể thao'},
+  {id:2,name:'Adidas Ultraboost 22 Core Black',brand:'Adidas',price:3800000,oldPrice:5000000,stock:8,status:'available',img:'https://images.footlocker.com/is/image/EBFL2/GX3060_a1',desc:'Boost cushioning thế hệ mới nhất',details:['Công nghệ Boost cushioning','Đế Continental rubber','Primeknit+ upper'],sizes:'38,39,40,41,42,43',tags:'chạy bộ, boost'},
+  {id:3,name:'MLB Big Ball Chunky Boston Red Sox',brand:'MLB',price:2500000,oldPrice:3200000,stock:22,status:'available',img:'https://product.hstatic.net/200000581855/product/giay_mlb_big_ball_chunky_a_classic_boston_redsox_3ashcs12n-43rds6_b37c1db90ec64d30882e1d36c0ccf6b3.png',desc:'Chunky sneaker phong cách Hàn Quốc',details:['Thiết kế chunky đặc trưng MLB','Logo MLB nổi bật','Đế chunky cao'],sizes:'36,37,38,39,40,41,42',tags:'mlb, chunky, hàn quốc'},
+  {id:4,name:'Puma Suede Classic Black White',brand:'Puma',price:1690000,oldPrice:2200000,stock:10,status:'available',img:'https://images.footlocker.com/is/image/EBFL2/35263403_a1',desc:'Classic sneaker huyền thoại của Puma',details:['Chất liệu suede cao cấp','Đế Puma Formstrip','Thiết kế classic bất hủ'],sizes:'38,39,40,41,42,43,44',tags:'classic, puma, suede'},
+  {id:5,name:'Nike Air Force 1 White',brand:'Nike',price:2800000,oldPrice:3500000,stock:30,status:'available',img:'https://file.hstatic.net/200000581855/product/dd1525-100_1_large.jpg',desc:'Iconic classic – trắng tinh khôi',details:['Upper da thật 100%','Đế Air đặc trưng','Midsole foam êm ái'],sizes:'38,39,40,41,42,43,44,45',tags:'classic, trắng, iconic'},
+];
+let editingProdId=null;
+function saveProds(){ localStorage.setItem('da_prods',JSON.stringify(adminProds)); }
+
+// Promo codes
+let promos = JSON.parse(localStorage.getItem('da_promos')||'null') || [
+  {code:'FS2026',pct:0,desc:'Miễn phí vận chuyển đơn từ 500k',minOrder:500000,exp:'2026-12-31',free_ship:true},
+  {code:'DRAGON10',pct:10,desc:'Giảm 10% toàn bộ đơn hàng',minOrder:0,exp:'2026-12-31',free_ship:false},
+];
+function savePromos(){ localStorage.setItem('da_promos',JSON.stringify(promos)); }
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+const pageMap={dashboard:'Dashboard',banner:'Banner & Logo',products:'Sản phẩm',promo:'Mã giảm giá',orders:'Đơn hàng',customers:'Khách hàng',settings:'Cài đặt',brands:'Hãng giày'};
+const subMap={dashboard:'Tổng quan',banner:'Nội dung website',products:'Nội dung website',promo:'Nội dung website',orders:'Kinh doanh',customers:'Kinh doanh',settings:'Hệ thống',brands:'Nội dung website'};
+
+function goPage(pg){
+  document.querySelectorAll('.apage').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+pg).classList.add('active');
+  document.querySelector(`[data-page="${pg}"]`).classList.add('active');
+  document.getElementById('pg-title').textContent=pageMap[pg]||pg;
+  document.getElementById('pg-sub').textContent=subMap[pg]||'';
+  if(pg==='dashboard') renderDashboard();
+  if(pg==='products') renderProducts();
+  if(pg==='orders') renderOrders();
+  if(pg==='customers') renderCustomers();
+  if(pg==='promo') renderPromos();
+  if(pg==='banner') loadBannerSettings();
+  if(pg==='brands') renderBrands();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(){
+  const orders=getOrders();
+  const rev=orders.reduce((s,o)=>s+(o.total||0),0);
+  const custs=getCustomers();
+  
+  // Get website data
+  const dragonState = JSON.parse(localStorage.getItem('dragon_state')||'{}');
+  const websiteCart = dragonState.websiteCart || [];
+  const websiteOrders = dragonState.websiteOrders || [];
+  const websiteProductList = dragonState.websiteProductList || [];
+  
+  // Total orders including website
+  const totalOrders = orders.length + websiteOrders.length;
+  
+  // Total customers including website
+  const allCustomers = [...custs];
+  if (dragonState.websiteCustomer && dragonState.websiteCustomer.name) {
+    const existing = allCustomers.find(c => c.phone === dragonState.websiteCustomer.phone);
+    if (!existing) {
+      allCustomers.push({
+        name: dragonState.websiteCustomer.name,
+        phone: dragonState.websiteCustomer.phone,
+        email: dragonState.websiteCustomer.email,
+        address: dragonState.websiteCustomer.address,
+        orders: websiteOrders.length,
+        total: websiteOrders.reduce((s, o) => s + (o.total || 0), 0)
+      });
+    }
+  }
+  
+  document.getElementById('st-orders').textContent=totalOrders;
+  document.getElementById('st-rev').textContent=fmtM(rev + websiteOrders.reduce((s,o)=>s+(o.total||0),0));
+  document.getElementById('st-custs').textContent=allCustomers.length;
+  document.getElementById('st-prods').textContent=adminProds.length + (websiteProductList.length - adminProds.length > 0 ? websiteProductList.length - adminProds.length : 0);
+  const nc=orders.filter(o=>getOrdStatus(o.id)==='new').length;
+  document.getElementById('badge-orders').textContent=nc;
+  
+  // recent orders - combine admin and website orders
+  const tb=document.getElementById('dash-orders');
+  const allOrders = [...orders, ...websiteOrders].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0,5);
+  
+  if(!allOrders.length){ tb.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Chưa có đơn hàng từ website</td></tr>`; return; }
+  tb.innerHTML=allOrders.map(o=>{
+    const st=getOrdStatus(o.id);
+    const items=(o.items||[]).map(i=>i.name||'').join(', ').slice(0,40)||'–';
+    return `<tr><td><strong style="color:#fff">#${o.id||'?'}</strong></td><td>${o.name||'–'}</td><td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)">${items}</td><td style="color:var(--gold);font-weight:700;white-space:nowrap">${fmtM(o.total)}</td><td>${sbadge(st)}</td><td style="color:var(--muted);white-space:nowrap">${o.date?new Date(o.date).toLocaleString('vi-VN'):'–'}</td></tr>`;
+  }).join('');
+}
+
+// ============================================================
+// ORDERS
+// ============================================================
+function renderOrders(){
+  const orders=getOrders();
+  
+  // Get website orders from dragon_state
+  const dragonState = JSON.parse(localStorage.getItem('dragon_state')||'{}');
+  const websiteOrders = dragonState.websiteOrders || [];
+  
+  // Combine all orders
+  const allOrders = [...orders, ...websiteOrders];
+  
+  const q=(document.getElementById('ord-search')?.value||'').toLowerCase();
+  const sf=document.getElementById('ord-status')?.value||'all';
+  const nc=allOrders.filter(o=>getOrdStatus(o.id)==='new').length;
+  document.getElementById('badge-orders').textContent=nc;
+  
+  const filtered=allOrders.filter(o=>{
+    const st=getOrdStatus(o.id);
+    return (!q||(o.name||'').toLowerCase().includes(q)||String(o.id||'').includes(q)||((o.phone||'').includes(q)))&&(sf==='all'||st===sf);
+  });
+  
+  const tb=document.getElementById('ord-body');
+  if(!filtered.length){ tb.innerHTML=`<tr><td colspan="9"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" x2="21" y1="6" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><p>Không có đơn hàng. Đơn từ website sẽ xuất hiện ở đây.</p></div></td></tr>`; return; }
+  tb.innerHTML=filtered.map(o=>{
+    const st=getOrdStatus(o.id);
+    const items=(o.items||[]).map(i=>i.name).join(', ').slice(0,50)||'–';
+    return `<tr><td><strong style="color:#fff">#${o.id||'?'}</strong></td><td style="font-weight:600;color:#fff">${o.name||'–'}</td><td style="color:var(--muted)">${o.phone||'–'}</td><td style="color:var(--muted);max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${o.address||''}">${o.address||'–'}</td><td style="color:var(--muted);max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${items}</td><td style="color:var(--gold);font-weight:700;white-space:nowrap">${fmtM(o.total)}</td><td><select class="stsel" onchange="updateOrdStatus('${o.id}',this.value)">${['new','processing','shipped','done','cancelled'].map(v=>`<option value="${v}"${st===v?' selected':''}>${{new:'Mới',processing:'Xử lý',shipped:'Đang giao',done:'Hoàn thành',cancelled:'Đã huỷ'}[v]}</option>`).join('')}</select></td><td style="color:var(--muted);white-space:nowrap">${o.date?new Date(o.date).toLocaleString('vi-VN'):'–'}</td><td><button class="btn danger" style="padding:5px 9px" onclick="deleteOrder('${o.id}')">🗑</button></td></tr>`;
+  }).join('');
+}
+
+function updateOrdStatus(id,st){
+  setOrdStatus(id,st);
+  renderOrders(); renderDashboard();
+  toast(`Đơn #${id}: cập nhật → ${st}`,'success');
+}
+function deleteOrder(id){
+  if(!confirm('Xoá đơn hàng này?')) return;
+  const s=getState(); s.orders=(s.orders||[]).filter(o=>String(o.id)!==String(id));
+  localStorage.setItem('dragon_state',JSON.stringify(s));
+  renderOrders(); renderDashboard(); toast('Đã xoá đơn #'+id,'success');
+}
+
+// ============================================================
+// PRODUCTS
+// ============================================================
+function renderProducts(){
+  const q=(document.getElementById('prod-search')?.value||'').toLowerCase();
+  const br=document.getElementById('prod-brand')?.value||'all';
+  const list=adminProds.filter(p=>(!q||p.name.toLowerCase().includes(q)||p.brand.toLowerCase().includes(q))&&(br==='all'||p.brand===br));
+  const tb=document.getElementById('prod-body');
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="7"><div class="empty"><p>Không tìm thấy sản phẩm nào.</p></div></td></tr>`; return; }
+  tb.innerHTML=list.map(p=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:11px">
+      <div class="prod-img-cell">${p.img?`<img src="${p.img}" alt="" onerror="this.style.display='none'"/>`:'👟'}</div>
+      <div><div style="font-weight:600;color:#fff;margin-bottom:2px">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.desc||''}</div></div>
+    </div></td>
+    <td><span class="sbadge new">${p.brand}</span></td>
+    <td style="color:var(--red);font-weight:700;white-space:nowrap">${fmtM(p.price)}</td>
+    <td style="color:var(--muted);text-decoration:line-through;white-space:nowrap">${p.oldPrice?fmtM(p.oldPrice):'–'}</td>
+    <td style="color:${p.stock<=5?'var(--red)':p.stock<=10?'var(--gold)':'var(--green)'};font-weight:700">${p.stock}</td>
+    <td>${p.status==='soldout'?'<span class="sbadge cancelled">Hết hàng</span>':p.status==='preorder'?'<span class="sbadge processing">Đặt trước</span>':'<span class="sbadge done">Còn hàng</span>'}</td>
+    <td><div style="display:flex;gap:6px">
+      <button class="btn ghost" style="padding:5px 10px;font-size:11px" onclick="editProduct('${p.id}')">✏️</button>
+      <button class="btn danger" style="padding:5px 10px;font-size:11px" onclick="deleteProduct('${p.id}')">🗑</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+function showProdForm(){
+  editingProdId=null;
+  ['pf-name','pf-img-url','pf-img2','pf-img3','pf-desc','pf-details','pf-sizes','pf-tags'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  document.getElementById('pf-price').value='';
+  document.getElementById('pf-oldprice').value='';
+  document.getElementById('pf-stock').value='';
+  document.getElementById('pf-brand').value='Nike';
+  document.getElementById('pf-status').value='available';
+  const prev=document.getElementById('pf-img-preview'); prev.style.display='none'; prev.src='';
+  document.getElementById('pf-img-placeholder').style.display='block';
+  document.getElementById('pf-title').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;color:var(--red)"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>Thêm sản phẩm mới`;
+  document.getElementById('prod-form').style.display='block';
+  document.getElementById('prod-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function hideProdForm(){ document.getElementById('prod-form').style.display='none'; editingProdId=null; }
+
+function editProduct(id){
+  const p=adminProds.find(x=>String(x.id)===String(id)); if(!p) return;
+  editingProdId=id;
+  document.getElementById('pf-name').value=p.name||'';
+  document.getElementById('pf-brand').value=p.brand||'Nike';
+  document.getElementById('pf-price').value=p.price||'';
+  document.getElementById('pf-oldprice').value=p.oldPrice||'';
+  document.getElementById('pf-stock').value=p.stock||'';
+  document.getElementById('pf-status').value=p.status||'available';
+  document.getElementById('pf-desc').value=p.desc||'';
+  document.getElementById('pf-details').value=(p.details||[]).join('\n');
+  document.getElementById('pf-sizes').value=p.sizes||'';
+  document.getElementById('pf-tags').value=p.tags||'';
+  document.getElementById('pf-img-url').value=p.img||'';
+  document.getElementById('pf-img2').value=p.img2||'';
+  document.getElementById('pf-img3').value=p.img3||'';
+  if(p.img){ const prev=document.getElementById('pf-img-preview'); prev.src=p.img; prev.style.display='block'; document.getElementById('pf-img-placeholder').style.display='none'; }
+  document.getElementById('pf-title').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;color:var(--red)"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Chỉnh sửa sản phẩm`;
+  document.getElementById('prod-form').style.display='block';
+  document.getElementById('prod-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function saveProduct(){
+  const name=document.getElementById('pf-name').value.trim();
+  if(!name){ toast('Vui lòng nhập tên sản phẩm','error'); return; }
+  const price=Number(document.getElementById('pf-price').value)||0;
+  if(!price){ toast('Vui lòng nhập giá bán','error'); return; }
+  const detailsRaw=document.getElementById('pf-details').value.trim();
+  const data={
+    name, brand:document.getElementById('pf-brand').value,
+    price, oldPrice:Number(document.getElementById('pf-oldprice').value)||0,
+    stock:Number(document.getElementById('pf-stock').value)||0,
+    status:document.getElementById('pf-status').value,
+    desc:document.getElementById('pf-desc').value.trim(),
+    details:detailsRaw?detailsRaw.split('\n').map(s=>s.trim()).filter(Boolean):[],
+    sizes:document.getElementById('pf-sizes').value.trim(),
+    tags:document.getElementById('pf-tags').value.trim(),
+    img:document.getElementById('pf-img-url').value.trim()||document.getElementById('pf-img-preview').src||'',
+    img2:document.getElementById('pf-img2').value.trim(),
+    img3:document.getElementById('pf-img3').value.trim(),
+  };
+  if(editingProdId){
+    const idx=adminProds.findIndex(p=>String(p.id)===String(editingProdId));
+    if(idx!==-1) adminProds[idx]={...adminProds[idx],...data};
+    toast('Đã cập nhật sản phẩm!','success');
+  } else {
+    data.id=Date.now();
+    adminProds.push(data);
+    toast('Đã thêm sản phẩm mới!','success');
+  }
+  saveProds(); hideProdForm(); renderProducts(); renderDashboard();
+  // sync to website
+  syncProductsToWebsite();
+}
+
+function deleteProduct(id){
+  if(!confirm('Xoá sản phẩm này?')) return;
+  adminProds=adminProds.filter(p=>String(p.id)!==String(id));
+  saveProds(); renderProducts(); renderDashboard(); toast('Đã xoá sản phẩm','success');
+  syncProductsToWebsite();
+}
+
+// Sync admin products to website localStorage
+function syncProductsToWebsite(){
+  const s=getState();
+  s.adminProducts=adminProds;
+  localStorage.setItem('dragon_state',JSON.stringify(s));
+}
+
+// ============================================================
+// IMAGE UPLOAD HANDLERS
+// ============================================================
+function handleImgUpload(type,input){
+  if(!input.files||!input.files[0]) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    if(type==='hero'){
+      const pr=document.getElementById('hero-img-preview'); pr.src=e.target.result; pr.style.display='block';
+      document.getElementById('hero-placeholder').style.display='none';
+      document.getElementById('hero-url').value='';
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function previewFromUrl(type,url){
+  if(type==='hero'){
+    if(!url){ const pr=document.getElementById('hero-img-preview'); pr.style.display='none'; document.getElementById('hero-placeholder').style.display='block'; return; }
+    const pr=document.getElementById('hero-img-preview'); pr.src=url; pr.style.display='block';
+    document.getElementById('hero-placeholder').style.display='none';
+  }
+}
+
+function handleProdImg(input){
+  if(!input.files||!input.files[0]) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const prev=document.getElementById('pf-img-preview'); prev.src=e.target.result; prev.style.display='block';
+    document.getElementById('pf-img-placeholder').style.display='none';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function previewProdImgFromUrl(url){
+  const prev=document.getElementById('pf-img-preview');
+  if(!url){ prev.style.display='none'; document.getElementById('pf-img-placeholder').style.display='block'; return; }
+  prev.src=url; prev.style.display='block';
+  document.getElementById('pf-img-placeholder').style.display='none';
+}
+
+// ============================================================
+// BANNER & LOGO SETTINGS
+// ============================================================
+function loadBannerSettings(){
+  const bs=JSON.parse(localStorage.getItem('da_banner')||'{}');
+  if(bs.heroUrl){ document.getElementById('hero-url').value=bs.heroUrl; previewFromUrl('hero',bs.heroUrl); }
+  if(bs.heroH1) document.getElementById('hero-h1').value=bs.heroH1;
+  if(bs.heroSub) document.getElementById('hero-sub').value=bs.heroSub;
+  if(bs.heroDesc) document.getElementById('hero-desc').value=bs.heroDesc;
+  if(bs.topbarText) document.getElementById('topbar-text').value=bs.topbarText;
+  if(bs.topbarCode) document.getElementById('topbar-code').value=bs.topbarCode;
+  if(bs.topbarColor) document.getElementById('topbar-color').value=bs.topbarColor;
+  const ls=JSON.parse(localStorage.getItem('da_logo')||'{}');
+  if(ls.abbr){ document.getElementById('logo-abbr').value=ls.abbr; document.getElementById('logo-mark-preview').textContent=ls.abbr; }
+  if(ls.color){ 
+    document.getElementById('logo-color').value=ls.color; 
+    document.getElementById('logo-mark-preview').style.background=`linear-gradient(145deg,${ls.color},${darken(ls.color)})`; 
+  }
+  if(ls.name) document.getElementById('brand-name').value=ls.name;
+  if(ls.highlight) document.getElementById('brand-highlight').value=ls.highlight;
+  const name=ls.name||'Dragon';
+  const highlight=ls.highlight||'Activiti';
+  document.getElementById('logo-name-preview').innerHTML=`${name} <span style="color:var(--gold)">${highlight}</span>`;
+}
+
+function saveBanner(type){
+  const bs=JSON.parse(localStorage.getItem('da_banner')||'{}');
+  if(type==='hero'){
+    bs.heroUrl=document.getElementById('hero-url').value||document.getElementById('hero-img-preview').src||'';
+    bs.heroH1=document.getElementById('hero-h1').value;
+    bs.heroSub=document.getElementById('hero-sub').value;
+    bs.heroDesc=document.getElementById('hero-desc').value;
+  }
+  localStorage.setItem('da_banner',JSON.stringify(bs));
+  // sync to website
+  const s=getState(); s.banner=bs; localStorage.setItem('dragon_state',JSON.stringify(s));
+  toast('Đã lưu banner! F5 lại website để xem thay đổi.','success');
+}
+
+function saveTopbar(){
+  const bs=JSON.parse(localStorage.getItem('da_banner')||'{}');
+  bs.topbarText=document.getElementById('topbar-text').value;
+  bs.topbarCode=document.getElementById('topbar-code').value;
+  bs.topbarColor=document.getElementById('topbar-color').value;
+  localStorage.setItem('da_banner',JSON.stringify(bs));
+  const s=getState(); s.banner=bs; localStorage.setItem('dragon_state',JSON.stringify(s));
+  toast('Đã lưu topbar! F5 lại website để xem.','success');
+}
+
+function saveLogo(){
+  const abbr=document.getElementById('logo-abbr').value||'DA';
+  const color=document.getElementById('logo-color').value;
+  const name=document.getElementById('brand-name').value;
+  const highlight=document.getElementById('brand-highlight').value;
+  const lo={abbr,color,name,highlight};
+  localStorage.setItem('da_logo',JSON.stringify(lo));
+  document.getElementById('logo-mark-preview').textContent=abbr;
+  document.getElementById('logo-mark-preview').style.background=`linear-gradient(145deg,${color},${darken(color)})`;
+  document.getElementById('logo-name-preview').innerHTML=`${name} <span style="color:var(--gold)">${highlight}</span>`;
+  const s=getState(); s.logo=lo; localStorage.setItem('dragon_state',JSON.stringify(s));
+  toast('Đã lưu logo! F5 lại website để xem.','success');
+}
+
+function updateLogoColor(){
+  const c=document.getElementById('logo-color').value;
+  document.getElementById('logo-mark-preview').style.background=`linear-gradient(145deg,${c},${darken(c)})`;
+}
+
+function darken(hex){
+  const h=hex.replace('#',''); let r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  r=Math.max(0,r-40); g=Math.max(0,g-40); b=Math.max(0,b-40);
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+// ============================================================
+// PROMO CODES
+// ============================================================
+function renderPromos(){
+  const el=document.getElementById('promo-list'); if(!el) return;
+  if(!promos.length){ el.innerHTML='<div class="empty"><p>Chưa có mã giảm giá nào.</p></div>'; return; }
+  el.innerHTML=promos.map((p,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px">
+      <div><div style="font-weight:800;font-size:15px;color:var(--gold);letter-spacing:.08em">${p.code}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.desc}${p.exp?' · HSD: '+p.exp:''}</div></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="background:rgba(245,197,24,0.15);color:var(--gold);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700">${p.free_ship?'Free ship':(p.pct+'%')}</span>
+        <button class="btn danger" style="padding:5px 9px" onclick="deletePromo(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function addPromo(){
+  const code=document.getElementById('np-code').value.trim().toUpperCase();
+  if(!code){ toast('Nhập mã coupon','error'); return; }
+  promos.push({
+    code, pct:Number(document.getElementById('np-pct').value)||0,
+    desc:document.getElementById('np-desc').value.trim(),
+    minOrder:Number(document.getElementById('np-min').value)||0,
+    exp:document.getElementById('np-exp').value||'',
+    free_ship:false
+  });
+  savePromos(); renderPromos();
+  document.getElementById('add-promo').style.display='none';
+  ['np-code','np-pct','np-min','np-exp','np-desc'].forEach(id=>document.getElementById(id).value='');
+  toast('Đã thêm mã giảm giá!','success');
+  const s=getState(); s.promos=promos; localStorage.setItem('dragon_state',JSON.stringify(s));
+}
+
+function deletePromo(idx){
+  if(!confirm('Xoá mã này?')) return;
+  promos.splice(idx,1); savePromos(); renderPromos();
+  const s=getState(); s.promos=promos; localStorage.setItem('dragon_state',JSON.stringify(s));
+  toast('Đã xoá mã giảm giá','success');
+}
+
+// ============================================================
+// CUSTOMERS
+// ============================================================
+function renderCustomers(){
+  const q=(document.getElementById('cust-search')?.value||'').toLowerCase();
+  const adminCustomers = getCustomers();
+  
+  // Get website customer from dragon_state
+  const dragonState = JSON.parse(localStorage.getItem('dragon_state')||'{}');
+  const websiteCustomer = dragonState.websiteCustomer;
+  const websiteOrders = dragonState.websiteOrders || [];
+  
+  let allCustomers = [...adminCustomers];
+  
+  // Add website customer if exists
+  if (websiteCustomer && websiteCustomer.name) {
+    const existing = allCustomers.find(c => c.phone === websiteCustomer.phone);
+    if (!existing) {
+      allCustomers.push({
+        name: websiteCustomer.name,
+        phone: websiteCustomer.phone,
+        email: websiteCustomer.email || '–',
+        address: websiteCustomer.address || '–',
+        orders: websiteOrders.length,
+        total: websiteOrders.reduce((s, o) => s + (o.total || 0), 0)
+      });
+    }
+  }
+  
+  const list = allCustomers.filter(c=>!q||(c.name||'').toLowerCase().includes(q)||(c.phone||'').includes(q));
+  const tb=document.getElementById('cust-body');
+  if(!list.length){ tb.innerHTML=`<tr><td colspan="7"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><p>Chưa có khách hàng. Dữ liệu lấy từ đơn hàng website.</p></div></td></tr>`; return; }
+  tb.innerHTML=list.map(c=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--red),#ff8a80);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:12px;flex-shrink:0">${(c.name||'?')[0].toUpperCase()}</div>
+      <span style="font-weight:600;color:#fff">${c.name||'–'}</span>
+    </div></td>
+    <td style="color:var(--muted)">${c.phone||'–'}</td>
+    <td style="color:var(--muted)">${c.email||'–'}</td>
+    <td style="color:var(--muted);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.address||'–'}</td>
+    <td style="color:var(--blue);font-weight:700">${c.orders}</td>
+    <td style="color:var(--gold);font-weight:700;white-space:nowrap">${fmtM(c.total)}</td>
+    <td><a href="https://zalo.me/${(c.phone||'').replace(/\D/g,'')}" target="_blank" class="btn ghost" style="padding:5px 10px;font-size:11px">💬 Zalo</a></td>
+  </tr>`).join('');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function saveSettings(){
+  const name=document.getElementById('set-name').value.trim();
+  const pw=document.getElementById('set-pw').value;
+  const pw2=document.getElementById('set-pw2').value;
+  if(pw && pw!==pw2){ toast('Mật khẩu xác nhận không khớp!','error'); return; }
+  const c=getCreds();
+  if(name) c.display=name;
+  if(pw) c.password=pw;
+  saveCreds(c);
+  sessionStorage.setItem('da_sess',JSON.stringify({username:c.username,display:c.display}));
+  if(name){ document.getElementById('sb-name').textContent=name; document.getElementById('sb-av').textContent=name[0].toUpperCase(); document.getElementById('wname').textContent=name; }
+  document.getElementById('set-pw').value=''; document.getElementById('set-pw2').value='';
+  toast('Đã lưu thông tin tài khoản!','success');
+}
+
+function saveStoreInfo(){
+  const si={name:document.getElementById('si-name').value,phone:document.getElementById('si-phone').value,zalo:document.getElementById('si-zalo').value,fb:document.getElementById('si-fb').value,address:document.getElementById('si-addr').value};
+  localStorage.setItem('da_store',JSON.stringify(si));
+  const s=getState(); s.storeInfo=si; localStorage.setItem('dragon_state',JSON.stringify(s));
+  toast('Đã lưu thông tin cửa hàng!','success');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg,type='success'){
+  const tw=document.getElementById('tw');
+  const el=document.createElement('div');
+  el.className=`toast-item ${type}`;
+  const icons={success:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',error:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'};
+  el.innerHTML=(icons[type]||icons.info)+msg;
+  tw.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); },3500);
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmtM(n){ return Number(n||0).toLocaleString('vi-VN')+'đ'; }
+function sbadge(st){
+  const m={new:['new','Mới'],processing:['processing','Xử lý'],shipped:['shipped','Đang giao'],done:['done','Hoàn thành'],cancelled:['cancelled','Đã huỷ']};
+  const [c,l]=m[st]||['new','Mới']; return `<span class="sbadge ${c}">${l}</span>`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function initAdmin(){
+  // Delay to ensure adminProds is initialized
+  setTimeout(() => {
+    // Save admin products to dragon_state for website access
+    if (typeof window.DragonState !== 'undefined') {
+      if (typeof adminProds !== 'undefined' && adminProds && adminProds.length > 0) {
+        window.DragonState.setAdminProducts(adminProds);
+      }
+    }
+  }, 50);
+  
+  renderDashboard();
+  renderProducts();
+  renderOrders();
+  // Load store info
+  const si=JSON.parse(localStorage.getItem('da_store')||'{}');
+  if(si.name) document.getElementById('si-name').value=si.name;
+  if(si.phone) document.getElementById('si-phone').value=si.phone;
+  if(si.zalo) document.getElementById('si-zalo').value=si.zalo;
+  if(si.fb) document.getElementById('si-fb').value=si.fb;
+  if(si.addr) document.getElementById('si-addr').value=si.addr;
+  // Listen for website orders
+  window.addEventListener('storage',function(e){
+    if(e.key==='dragon_state'){
+      renderDashboard(); renderOrders(); renderCustomers();
+      toast('🛒 Có hoạt động mới từ website!','info');
+    }
+  });
+}
+
+// Import products from index.html website file manually
+async function importFromWebsite() {
+  if (!confirm('Hệ thống sẽ tải trang chủ Website và nhập toàn bộ sản phẩm chưa có trong danh sách vào Admin. Tiếp tục?')) return;
+  
+  toast('Đang tải dữ liệu từ website...', 'info');
+  
+  try {
+    const response = await fetch('index.html');
+    if (!response.ok) throw new Error('Không thể tải file index.html');
+    const html = await response.text();
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const productCards = [...doc.querySelectorAll('.product-card')];
+    
+    if (productCards.length === 0) {
+      toast('Không tìm thấy sản phẩm nào trên Website!', 'error');
+      return;
+    }
+    
+    // Use the same extraction logic as in index.html
+    function textOf(el) {
+      return (el?.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+    
+    function parsePrice(text) {
+      const digits = (text || '').replace(/[^\d]/g, '');
+      return digits ? Number(digits) : 0;
+    }
+    
+    function normalize(text) {
+      return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+    
+    function productFromCard(card) {
+      const name = textOf(card.querySelector('.product-name'));
+      const img = card.querySelector('img')?.src || '';
+      const saleText = textOf(card.querySelector('.price-new'));
+      const fallbackText = textOf(card.querySelector('.price-soldout'));
+      const price = parsePrice(saleText || fallbackText);
+      const oldPrice = parsePrice(textOf(card.querySelector('.price-old')));
+      const soldOut = !!card.querySelector('.add-cart-btn.disabled, .badge-soldout');
+      let brand = ['Nike', 'Adidas', 'Puma', 'New Balance', 'MLB', 'Fila', 'Onitsuka', 'Jeep', 'Mizuno', 'Asics', 'Beyono', 'Kamito', 'Kawasaki', 'Lining', 'Li-ning', 'Yonex', 'Mira'].find(item => normalize(name).includes(normalize(item))) || 'Khác';
+      if (brand === 'Lining') brand = 'Li-ning';
+      return {
+        id: normalize(name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        name,
+        img,
+        price,
+        oldPrice,
+        soldOut,
+        brand,
+        sizes: soldOut ? [] : ['36', '37', '38', '39', '40', '41', '42', '43'],
+        stock: soldOut ? 0 : Math.max(3, Math.floor((name.length % 8) + 4)),
+        sku: name.split(' ').slice(-1)[0].replace(/[^A-Za-z0-9-]/g, '') || 'DRAGON-ACTIVITI'
+      };
+    }
+    
+    const webProducts = productCards.map(productFromCard);
+    
+    let importedCount = 0;
+    webProducts.forEach(p => {
+      const exists = adminProds.some(ap => ap.name.trim().toLowerCase() === p.name.trim().toLowerCase());
+      if (!exists) {
+        const newAdminProd = {
+          id: p.id || 'prod-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+          name: p.name,
+          brand: p.brand || 'Khác',
+          price: p.price || 0,
+          oldPrice: p.oldPrice || 0,
+          stock: p.stock || 10,
+          status: p.soldOut ? 'soldout' : 'available',
+          img: p.img || '',
+          img2: '',
+          img3: '',
+          desc: p.brand + ' chính hãng, phong cách thể thao',
+          details: [
+            p.brand + ' chính hãng',
+            'Thiết kế thời trang, êm ái',
+            'Phù hợp nhiều hoạt động thể thao & dạo phố'
+          ],
+          sizes: p.sizes ? p.sizes.join(',') : '38,39,40,41,42,43,44',
+          tags: ''
+        };
+        adminProds.push(newAdminProd);
+        importedCount++;
+      }
+    });
+    
+    if (importedCount > 0) {
+      saveProds();
+      syncProductsToWebsite();
+      renderProducts();
+      renderDashboard();
+      toast(`Đã nhập thành công ${importedCount} sản phẩm từ Website!`, 'success');
+    } else {
+      toast('Tất cả sản phẩm từ Website đã có sẵn trong Admin.', 'info');
+    }
+    
+    localStorage.setItem('da_imported_from_web', 'true');
+  } catch (error) {
+    console.error(error);
+    toast('Lỗi khi tải hoặc xử lý file index.html', 'error');
+  }
+}
+
+// ============================================================
+// BRAND MANAGEMENT
+// ============================================================
+const DEFAULT_BRANDS = [
+  {id:'m-home', name:'Trang chủ', logo:'', showOnNav:true, type:'link'},
+  {id:'b-nike', name:'Nike', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-adidas', name:'Adidas', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-mlb', name:'MLB', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-puma', name:'Puma', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-fila', name:'Fila', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-nb', name:'New Balance', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-onitsuka', name:'Onitsuka', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-jeep', name:'Jeep', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-asics', name:'Asics', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-mizuno', name:'Mizuno', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-kamito', name:'Kamito', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-lining', name:'Li-ning', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-yonex', name:'Yonex', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-mira', name:'Mira', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-beyono', name:'Beyono', logo:'', showOnNav:true, type:'brand'},
+  {id:'b-kawasaki', name:'Kawasaki', logo:'', showOnNav:true, type:'brand'},
+  {id:'m-khac', name:'Giày Khác', logo:'', showOnNav:true, type:'link'},
+  {id:'m-bongchuyen', name:'Giày Bóng Chuyền', logo:'', showOnNav:true, type:'link'},
+  {id:'m-quanao', name:'Quần Áo / Phụ Kiện', logo:'', showOnNav:true, type:'link'},
+  {id:'m-nuochoa', name:'Nước Hoa', logo:'', showOnNav:true, type:'link'},
+  {id:'m-order', name:'Hàng Order', logo:'', showOnNav:true, type:'link'},
+  {id:'m-blog', name:'Blog', logo:'', showOnNav:true, type:'link'}
+];
+
+function getBrandList(){
+  let brands = [];
+  try { brands = JSON.parse(localStorage.getItem('da_brands')||'[]'); } catch(e){}
+  if(!brands || brands.length===0 || !brands.some(b => b.id === 'm-home')){
+    const newBrands = JSON.parse(JSON.stringify(DEFAULT_BRANDS));
+    if(brands && brands.length > 0) {
+      brands.forEach(ob => {
+        const match = newBrands.find(nb => nb.name.toLowerCase() === ob.name.toLowerCase());
+        if(match) {
+          match.showOnNav = (ob.showOnNav !== undefined) ? ob.showOnNav : match.showOnNav;
+          match.logo = ob.logo || match.logo;
+        } else {
+          ob.type = 'brand';
+          if(ob.showOnNav === undefined) ob.showOnNav = true; // default new legacy to true
+          newBrands.push(ob);
+        }
+      });
+    }
+    brands = newBrands;
+    localStorage.setItem('da_brands',JSON.stringify(brands));
+    if(window.DragonState) window.DragonState.setBrands(brands);
+  } else {
+    // If we've already migrated, let's just make sure undefined showOnNav are cast to true
+    let modified = false;
+    brands.forEach(b => {
+      if(b.showOnNav === undefined) {
+        b.showOnNav = true; // default others to true
+        modified = true;
+      }
+    });
+    
+    // FORCE UPDATE: Set all brands to show on web as requested by user
+    if(!localStorage.getItem('da_brands_show_all_fixed_v2')) {
+      brands.forEach(b => {
+        b.showOnNav = true;
+      });
+      modified = true;
+      localStorage.setItem('da_brands_show_all_fixed_v2', 'true');
+    }
+
+    if(modified) {
+      localStorage.setItem('da_brands', JSON.stringify(brands));
+      if(window.DragonState) window.DragonState.setBrands(brands);
+    }
+  }
+  return brands;
+}
+
+function renderBrands(){
+  const brands = getBrandList();
+  const tbody = document.getElementById('brand-list');
+  if(!tbody) return;
+  const countInfo = document.getElementById('brand-count-info');
+  if(countInfo) countInfo.textContent = `Tổng: ${brands.length} hãng`;
+
+  // Count products per brand
+  const prodCounts = {};
+  adminProds.forEach(p => {
+    const b = p.brand || 'Khác';
+    prodCounts[b] = (prodCounts[b]||0) + 1;
+  });
+
+  tbody.innerHTML = brands.map(b => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:10px 12px">
+        ${b.logo
+          ? `<img src="${b.logo}" alt="${b.name}" style="height:36px;width:36px;object-fit:contain;border-radius:8px;background:var(--surface2);padding:4px"/>`
+          : `<div style="height:36px;width:36px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--gold)">${(b.name||'?').slice(0,2).toUpperCase()}</div>`
+        }
+      </td>
+      <td style="padding:10px 12px">
+        <div style="font-weight:700;color:#fff;font-size:14px">${b.name}</div>
+        <div style="font-size:11px;margin-top:4px;color:${b.showOnNav ? '#4caf50' : '#888'}">
+          ${b.showOnNav ? '✓ Hiển thị trên web' : '✗ Ẩn trên web'}
+        </div>
+      </td>
+      <td style="padding:10px 12px">
+        <span class="sbadge new" style="font-size:12px">${prodCounts[b.name]||0} sản phẩm</span>
+      </td>
+      <td style="padding:10px 12px;text-align:right">
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn ghost" style="padding:5px 10px;font-size:11px" onclick="openBrandModal('${b.id}')">✏️ Sửa</button>
+          <button class="btn danger" style="padding:5px 10px;font-size:11px" onclick="deleteBrand('${b.id}')">🗑 Xóa</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
+  // Also refresh all dynamic brand selects
+  populateBrandSelects();
+}
+
+function populateBrandSelects(){
+  const brands = getBrandList().filter(b => b.type !== 'link');
+  // Product form brand select
+  const pfBrand = document.getElementById('pf-brand');
+  if(pfBrand){
+    const curVal = pfBrand.value;
+    pfBrand.innerHTML = '';
+    brands.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.name; opt.textContent = b.name;
+      pfBrand.appendChild(opt);
+    });
+    if(curVal) pfBrand.value = curVal;
+  }
+  // Product filter brand select
+  const prodBrand = document.getElementById('prod-brand');
+  if(prodBrand){
+    const curVal = prodBrand.value;
+    prodBrand.innerHTML = '<option value="all">Tất cả</option>';
+    brands.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b.name; opt.textContent = b.name;
+      prodBrand.appendChild(opt);
+    });
+    if(curVal) prodBrand.value = curVal;
+  }
+}
+
+function openBrandModal(id){
+  const modal = document.getElementById('brand-modal');
+  const brands = getBrandList();
+  let brand = null;
+  if(id) brand = brands.find(b => b.id === id);
+
+  document.getElementById('bm-id').value = brand ? brand.id : '';
+  document.getElementById('bm-name').value = brand ? brand.name : '';
+  document.getElementById('bm-show-nav').checked = brand ? (brand.showOnNav !== false) : true;
+  document.getElementById('bm-logo-file').value = '';
+  const preview = document.getElementById('bm-logo-preview');
+  if(brand && brand.logo){ preview.src = brand.logo; preview.style.display='block'; }
+  else { preview.src=''; preview.style.display='none'; }
+
+  document.getElementById('bm-title').textContent = brand ? 'Chỉnh sửa hãng: '+brand.name : 'Thêm hãng giày mới';
+  modal.style.display = 'flex';
+}
+
+function closeBrandModal(){
+  document.getElementById('brand-modal').style.display='none';
+}
+
+function saveBrandFromModal(){
+  try {
+    const id = document.getElementById('bm-id').value;
+    const name = document.getElementById('bm-name').value.trim();
+    const showOnNav = document.getElementById('bm-show-nav').checked;
+    if(!name){ toast('Vui lòng nhập tên hãng','error'); return; }
+    const fileInput = document.getElementById('bm-logo-file');
+    const file = fileInput.files && fileInput.files[0];
+    const brands = getBrandList();
+
+    const doSave = (logoData) => {
+      try {
+        if(id){
+          // Edit existing
+          const brand = brands.find(b => b.id === id);
+          if(brand){
+            // If name changed, update all products with old brand name
+            if(brand.name !== name){
+              adminProds.forEach(p => { if(p.brand === brand.name) p.brand = name; });
+              saveProds();
+              syncProductsToWebsite();
+            }
+            brand.name = name;
+            brand.showOnNav = showOnNav;
+            if(logoData !== undefined) brand.logo = logoData;
+          }
+        } else {
+          // Add new
+          const exists = brands.find(b => b.name.toLowerCase() === name.toLowerCase());
+          if(exists){ toast('Hãng "'+name+'" đã tồn tại!','error'); return; }
+          brands.push({ id: 'b-'+Date.now(), name, logo: logoData || '', showOnNav });
+        }
+        localStorage.setItem('da_brands', JSON.stringify(brands));
+        if(window.DragonState) window.DragonState.setBrands(brands);
+        renderBrands();
+        closeBrandModal();
+        toast(id ? 'Đã cập nhật hãng "'+name+'"!' : 'Đã thêm hãng "'+name+'"!', 'success');
+      } catch (err) {
+        alert('Lỗi trong doSave: ' + err.message);
+      }
+    };
+
+    if(file){
+      const reader = new FileReader();
+      reader.onload = e => doSave(e.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      const existing = brands.find(b => b.id === id);
+      doSave(existing ? existing.logo : '');
+    }
+  } catch (err) {
+    alert('Lỗi saveBrandFromModal: ' + err.message);
+  }
+}
+
+function deleteBrand(id){
+  if(!confirm('Xóa hãng giày này?\nCác sản phẩm thuộc hãng sẽ được chuyển sang "Khác".')) return;
+  let brands = getBrandList();
+  const brand = brands.find(b => b.id === id);
+  if(!brand) return;
+
+  // Reassign products to "Khác"
+  adminProds.forEach(p => { if(p.brand === brand.name) p.brand = 'Khác'; });
+  saveProds();
+  syncProductsToWebsite();
+
+  // Remove brand
+  brands = brands.filter(b => b.id !== id);
+  localStorage.setItem('da_brands', JSON.stringify(brands));
+  if(window.DragonState) window.DragonState.setBrands(brands);
+  renderBrands();
+  renderProducts();
+  toast('Đã xóa hãng "'+brand.name+'". Sản phẩm đã chuyển sang "Khác".','success');
+}
+
+// Initialize brand selects on page load
+document.addEventListener('DOMContentLoaded', () => {
+  getBrandList(); // ensure defaults are seeded
+  populateBrandSelects();
+});
+
+</script>
+
+<!-- Brand Modal -->
+<div id="brand-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:var(--surface,#1e1e2e);border:1px solid var(--border,#333);padding:28px;border-radius:16px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.5)">
+    <h3 id="bm-title" style="margin:0 0 20px 0;font-size:18px;font-weight:800;color:#fff">Thêm hãng giày mới</h3>
+    <input type="hidden" id="bm-id"/>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted,#888);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Tên hãng giày *</label>
+      <input type="text" id="bm-name" placeholder="VD: Nike, Adidas..." style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border,#333);background:var(--surface2,#2a2a3e);color:#fff;font-size:14px;outline:none;box-sizing:border-box"/>
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted,#888);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Logo hãng (tùy chọn)</label>
+      <input type="file" id="bm-logo-file" accept="image/*" style="font-size:13px;color:var(--muted,#888)" onchange="if(this.files[0]){const r=new FileReader();r.onload=e=>{document.getElementById('bm-logo-preview').src=e.target.result;document.getElementById('bm-logo-preview').style.display='block'};r.readAsDataURL(this.files[0])}"/>
+      <img id="bm-logo-preview" src="" style="max-height:60px;margin-top:8px;display:none;border-radius:8px;background:var(--surface2,#2a2a3e);padding:6px"/>
+    </div>
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px">
+      <input type="checkbox" id="bm-show-nav" style="width:18px;height:18px;accent-color:var(--primary)" checked/>
+      <label for="bm-show-nav" style="font-size:14px;color:#fff;cursor:pointer">Hiển thị trên menu Website</label>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border,#333)">
+      <button class="btn ghost" onclick="closeBrandModal()" style="padding:8px 18px">Hủy</button>
+      <button class="btn primary" onclick="saveBrandFromModal()" style="padding:8px 18px;display:flex;align-items:center;gap:6px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><polyline points="20 6 9 17 4 12"/></svg>
+        Lưu
+      </button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
