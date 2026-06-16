@@ -326,14 +326,14 @@ window.websiteIntegration = {
       const selectedIds = (state && state.superSaleProductIds) || [];
       if (selectedIds.length) {
         const byId = Object.fromEntries(window.products.map(p => [String(p.id), p]));
-        saleProducts = selectedIds.map(String).map(id => byId[id]).filter(Boolean).slice(0, 8);
+        saleProducts = selectedIds.map(String).map(id => byId[id]).filter(Boolean).slice(0, 10);
       }
     } catch (e) {
       // ignore and fallback below
     }
 
     if (!saleProducts.length) {
-      saleProducts = window.products.filter(p => p.discount > 0 || p.oldPrice > p.price || p.soldOut).slice(0, 8);
+      saleProducts = window.products.filter(p => p.discount > 0 || p.oldPrice > p.price || p.soldOut).slice(0, 10);
     }
 
     if (saleProducts.length === 0) {
