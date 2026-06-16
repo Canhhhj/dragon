@@ -324,8 +324,11 @@ window.websiteIntegration = {
     let saleDiscounts = {};
     try {
       const state = window.DragonState.getState();
-      const selectedIds = (state && state.superSaleProductIds) || [];
+      let selectedIds = (state && state.superSaleProductIds) || [];
       if (selectedIds.length) {
+        if (typeof selectedIds[0] === 'string') {
+          selectedIds = selectedIds.map(id => ({ id: String(id), discount: 0 }));
+        }
         const byId = Object.fromEntries(window.products.map(p => [String(p.id), p]));
         saleProducts = selectedIds.map(item => byId[String(item.id)]).filter(Boolean).slice(0, 10);
         selectedIds.forEach(item => {

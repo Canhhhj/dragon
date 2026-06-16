@@ -929,6 +929,16 @@ function savePromos(){ localStorage.setItem('da_promos',JSON.stringify(promos));
 let superSaleIds = JSON.parse(localStorage.getItem('da_super_sale_ids')||'null') || [];
 function saveSuperSaleIds(){ localStorage.setItem('da_super_sale_ids',JSON.stringify(superSaleIds)); }
 
+function normalizeSuperSale(){
+  if(!superSaleIds.length) return;
+  const first = superSaleIds[0];
+  // old format: ["1","2"] -> new format: [{id:"1", discount:0}, ...]
+  if(typeof first === 'string'){
+    superSaleIds = superSaleIds.map(id => ({ id: String(id), discount: 0 }));
+    saveSuperSaleIds();
+  }
+}
+
 function getSuperSaleMeta(id){
   id = String(id);
   const meta = superSaleIds.find(x => String(x.id) === id);
@@ -944,6 +954,7 @@ function updateSuperSaleDiscount(id, discount){
 }
 
 function renderSuperSale(){
+  normalizeSuperSale();
   const tb=document.getElementById('super-sale-body'); if(!tb) return;
   const validIds = new Set(adminProds.map(p => String(p.id)));
   const cleaned = superSaleIds.filter(x => validIds.has(String(x.id)));
