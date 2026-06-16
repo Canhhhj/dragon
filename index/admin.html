@@ -961,7 +961,7 @@ function toggleSuperSale(id, checked){
     superSaleIds = superSaleIds.filter(x => x !== id);
   }
   saveSuperSaleIds();
-  renderSuperSalePreview();
+  renderSuperSale();
   syncSuperSaleToWebsite();
 }
 
@@ -1502,6 +1502,7 @@ function initAdmin(){
   renderDashboard();
   renderProducts();
   renderOrders();
+  renderSuperSale();
   // Load store info
   const si=JSON.parse(localStorage.getItem('da_store')||'{}');
   if(si.name) document.getElementById('si-name').value=si.name;
