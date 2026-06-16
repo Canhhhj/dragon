@@ -4657,7 +4657,15 @@ modal.addEventListener('click', event => {
   if (event.target.id === 'contact-store') showToast('Hotline: 0909 000 888 - Zalo: 0909 000 888.');
 });
 
+let detailPageTouchEnd = false;
+detailPage.addEventListener('touchstart', () => {
+  detailPageTouchEnd = true;
+}, { passive: true });
+detailPage.addEventListener('touchend', () => {
+  detailPageTouchEnd = false;
+}, { passive: true });
 detailPage.addEventListener('click', event => {
+  if (detailPageTouchEnd) return;
   const size = event.target.dataset.size;
   const addDetailId = event.target.dataset.addDetail;
   const buyNowId = event.target.dataset.buyNow;
