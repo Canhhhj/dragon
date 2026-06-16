@@ -950,7 +950,7 @@ function normalizeSuperSale(){
   const first = superSaleIds[0];
   // old format: ["1","2"] or ["name1","name2"] -> new format: [{name:"name", discount:0}, ...]
   if(typeof first === 'string'){
-    // try mapping id-based string to product name
+    console.log('[superSale] migrate string -> object', superSaleIds);
     const mapped = superSaleIds.map(item => {
       const prod = adminProds.find(p => String(p.id) === String(item));
       return prod ? { name: prod.name, discount: 0 } : { name: String(item), discount: 0 };
@@ -960,6 +960,7 @@ function normalizeSuperSale(){
   }
   // migrate from id-based object to name-based
   if(first && typeof first === 'object' && first.id !== undefined && first.name === undefined){
+    console.log('[superSale] migrate id-based object -> name-based');
     const migrated = superSaleIds.map(item => {
       const prod = adminProds.find(p => String(p.id) === String(item.id));
       return prod ? { name: prod.name, discount: item.discount || 0 } : null;
@@ -969,6 +970,7 @@ function normalizeSuperSale(){
       saveSuperSaleIds();
     }
   }
+  console.log('[superSale] normalized', superSaleIds);
 }
 
 function getSuperSaleMeta(name){
@@ -1044,6 +1046,12 @@ function saveSuperSale(){
   saveSuperSaleIds();
   toast('Đã lưu cài đặt siêu khuyến mãi','success');
   syncSuperSaleToWebsite();
+}
+
+function syncSuperSaleToWebsite(){
+  const s=getState();
+  s.superSaleProductIds = superSaleIds;
+  localStorage.setItem('dragon_state',JSON.stringify(s));
 }
 
 function renderSuperSalePreview(){

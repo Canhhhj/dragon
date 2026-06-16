@@ -329,6 +329,13 @@ window.websiteIntegration = {
         if (typeof selectedIds[0] === 'string') {
           selectedIds = selectedIds.map(name => ({ name: String(name), discount: 0 }));
         }
+        if (selectedIds[0] && typeof selectedIds[0] === 'object' && selectedIds[0].id !== undefined && selectedIds[0].name === undefined) {
+          const byId = Object.fromEntries(window.products.map(p => [String(p.id), p]));
+          selectedIds = selectedIds.map(item => {
+            const p = byId[String(item.id)];
+            return p ? { name: p.name, discount: Number(item.discount) || 0 } : null;
+          }).filter(Boolean);
+        }
         const byName = Object.fromEntries(window.products.map(p => [String(p.name), p]));
         saleProducts = selectedIds.map(item => byName[String(item.name)]).filter(Boolean).slice(0, 10);
         selectedIds.forEach(item => {
