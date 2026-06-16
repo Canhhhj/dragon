@@ -925,51 +925,65 @@ let promos = JSON.parse(localStorage.getItem('da_promos')||'null') || [
 ];
 function savePromos(){ localStorage.setItem('da_promos',JSON.stringify(promos)); }
 
-// Super sale
+// Super sale - use product name as key to match admin and website
 let superSaleIds = JSON.parse(localStorage.getItem('da_super_sale_ids')||'null') || [];
 function saveSuperSaleIds(){ localStorage.setItem('da_super_sale_ids',JSON.stringify(superSaleIds)); }
 
 function normalizeSuperSale(){
   if(!superSaleIds.length) return;
   const first = superSaleIds[0];
-  // old format: ["1","2"] -> new format: [{id:"1", discount:0}, ...]
+  // old format: ["1","2"] or ["name1","name2"] -> new format: [{name:"name", discount:0}, ...]
   if(typeof first === 'string'){
-    superSaleIds = superSaleIds.map(id => ({ id: String(id), discount: 0 }));
+    // try mapping id-based string to product name
+    const mapped = superSaleIds.map(item => {
+      const prod = adminProds.find(p => String(p.id) === String(item));
+      return prod ? { name: prod.name, discount: 0 } : { name: String(item), discount: 0 };
+    });
+    superSaleIds = mapped;
     saveSuperSaleIds();
+  }
+  // migrate from id-based object to name-based
+  if(first && typeof first === 'object' && first.id !== undefined && first.name === undefined){
+    const migrated = superSaleIds.map(item => {
+      const prod = adminProds.find(p => String(p.id) === String(item.id));
+      return prod ? { name: prod.name, discount: item.discount || 0 } : null;
+    }).filter(Boolean);
+    if(migrated.length){
+      superSaleIds = migrated;
+      saveSuperSaleIds();
+    }
   }
 }
 
-function getSuperSaleMeta(id){
-  id = String(id);
-  const meta = superSaleIds.find(x => String(x.id) === id);
+function getSuperSaleMeta(name){
+  const meta = superSaleIds.find(x => x.name === name);
   return meta ? meta.discount : 0;
 }
 
-function updateSuperSaleDiscount(id, discount){
-  id = String(id);
-  const idx = superSaleIds.findIndex(x => String(x.id) === id);
+function updateSuperSaleDiscount(name, discount){
+  const idx = superSaleIds.findIndex(x => x.name === name);
   if(idx !== -1){
-    superSaleIds[idx] = { id, discount: Number(discount) || 0 };
+    superSaleIds[idx] = { name, discount: Number(discount) || 0 };
   }
 }
 
 function renderSuperSale(){
   normalizeSuperSale();
   const tb=document.getElementById('super-sale-body'); if(!tb) return;
-  const validIds = new Set(adminProds.map(p => String(p.id)));
-  const cleaned = superSaleIds.filter(x => validIds.has(String(x.id)));
+  const validNames = new Set(adminProds.map(p => p.name));
+  const cleaned = superSaleIds.filter(x => validNames.has(x.name));
   if(cleaned.length !== superSaleIds.length){
     superSaleIds = cleaned;
     saveSuperSaleIds();
   }
   const sorted = [...adminProds].sort((a,b) => {
-    const as = superSaleIds.some(x => String(x.id) === String(a.id)) ? 0 : 1;
-    const bs = superSaleIds.some(x => String(x.id) === String(b.id)) ? 0 : 1;
+    const as = superSaleIds.some(x => x.name === a.name) ? 0 : 1;
+    const bs = superSaleIds.some(x => x.name === b.name) ? 0 : 1;
     return as - bs;
   });
   tb.innerHTML = sorted.map(p => {
-    const active = superSaleIds.some(x => String(x.id) === String(p.id));
-    const discount = getSuperSaleMeta(p.id);
+    const active = superSaleIds.some(x => x.name === p.name);
+    const discount = getSuperSaleMeta(p.name);
     return `
     <tr>
       <td><input type="checkbox" ${active?'checked':''} onchange="toggleSuperSale('${p.id}', this.checked)"/></td>
@@ -988,11 +1002,13 @@ function renderSuperSale(){
 }
 
 function toggleSuperSale(id, checked){
-  id = String(id);
+  const prod = adminProds.find(p => String(p.id) === String(id));
+  if(!prod) return;
+  const name = prod.name;
   if(checked){
-    if(!superSaleIds.some(x => String(x.id) === id)) superSaleIds.push({ id, discount: 0 });
+    if(!superSaleIds.some(x => x.name === name)) superSaleIds.push({ name, discount: 0 });
   } else {
-    superSaleIds = superSaleIds.filter(x => String(x.id) !== id);
+    superSaleIds = superSaleIds.filter(x => x.name !== name);
   }
   saveSuperSaleIds();
   renderSuperSale();
@@ -1000,14 +1016,12 @@ function toggleSuperSale(id, checked){
 }
 
 function updateSuperSale(id, discount){
-  id = String(id);
-  const exists = superSaleIds.some(x => String(x.id) === id);
-  if(exists){
-    updateSuperSaleDiscount(id, discount);
-    saveSuperSaleIds();
-    renderSuperSalePreview();
-    syncSuperSaleToWebsite();
-  }
+  const prod = adminProds.find(p => String(p.id) === String(id));
+  if(!prod) return;
+  updateSuperSaleDiscount(prod.name, discount);
+  saveSuperSaleIds();
+  renderSuperSalePreview();
+  syncSuperSaleToWebsite();
 }
 
 function saveSuperSale(){
@@ -1020,7 +1034,7 @@ function renderSuperSalePreview(){
   const preview = document.getElementById('super-sale-preview');
   const empty = document.getElementById('super-sale-empty');
   if(!preview || !empty) return;
-  const items = adminProds.filter(p => superSaleIds.some(x => String(x.id) === String(p.id))).slice(0,10);
+  const items = adminProds.filter(p => superSaleIds.some(x => x.name === p.name)).slice(0,10);
   if(!items.length){
     preview.innerHTML = '';
     empty.style.display = 'block';
@@ -1028,7 +1042,50 @@ function renderSuperSalePreview(){
   }
   empty.style.display = 'none';
   preview.innerHTML = items.map(p => {
-    const discount = getSuperSaleMeta(p.id);
+    const discount = getSuperSaleMeta(p.name);
+    return `
+    <div class="product-card">
+      <div class="product-img">
+        <img src="${p.img}" alt="${p.name}" onerror="this.src='https://placehold.co/300x300/f8f8f8/ccc?text=Giay'"/>
+        ${p.soldOut ? '<span class="badge-soldout">Hết hàng</span>' : ''}
+        ${discount > 0 ? `<span class="badge-sale">-${discount}%</span>` : ''}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-price">
+          ${p.price ? `<span class="price-new">${fmtM(p.price)}</span>` : '<span class="price-soldout">Liên hệ</span>'}
+          ${p.oldPrice > p.price ? `<span class="price-old">${fmtM(p.oldPrice)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `}).join('');
+}
+
+function syncSuperSaleToWebsite(){
+  const s=getState();
+  s.superSaleProductIds = superSaleIds;
+  localStorage.setItem('dragon_state',JSON.stringify(s));
+}
+
+function saveSuperSale(){
+  saveSuperSaleIds();
+  toast('Đã lưu cài đặt siêu khuyến mãi','success');
+  syncSuperSaleToWebsite();
+}
+
+function renderSuperSalePreview(){
+  const preview = document.getElementById('super-sale-preview');
+  const empty = document.getElementById('super-sale-empty');
+  if(!preview || !empty) return;
+  const items = adminProds.filter(p => superSaleIds.some(x => x.name === p.name)).slice(0,10);
+  if(!items.length){
+    preview.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  preview.innerHTML = items.map(p => {
+    const discount = getSuperSaleMeta(p.name);
     return `
     <div class="product-card">
       <div class="product-img">
