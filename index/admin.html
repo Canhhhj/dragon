@@ -697,13 +697,15 @@ input,select,textarea{outline:none}
         <h2 class="section-title" style="margin-bottom:16px">⚡ Siêu khuyến mãi</h2>
         <div class="two-col">
           <div class="acard">
-            <div class="acard-head"><div class="acard-title">Chọn sản phẩm hiển thị</div></div>
-            <div style="padding:18px">
-              <div style="color:var(--muted);font-size:13px;margin-bottom:12px">Tối đa 10 sản phẩm. Các sản phẩm đã chọn sẽ hiện ở mục <strong>Siêu Khuyến Mãi</strong> trên trang chủ website.</div>
-              <div class="tbl-wrap"><table class="atable"><thead><tr><th style="width:28px">Chọn</th><th>Sản phẩm</th><th>Giá bán</th><th>Trạng thái</th></tr></thead><tbody id="super-sale-body"></tbody></table></div>
-              <div style="display:flex;justify-content:flex-end;margin-top:10px">
+            <div class="acard-head">
+              <div class="acard-title">Chọn sản phẩm hiển thị</div>
+              <div>
                 <button class="btn primary" onclick="saveSuperSale()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Lưu cài đặt</button>
               </div>
+            </div>
+            <div style="padding:18px">
+              <div style="color:var(--muted);font-size:13px;margin-bottom:12px">Tối đa 10 sản phẩm. Các sản phẩm đã chọn sẽ hiện ở mục <strong>Siêu Khuyến Mãi</strong> trên trang chủ website. Sản phẩm đang tích sẽ được ưu tiên hiển thị trước.</div>
+              <div class="tbl-wrap"><table class="atable"><thead><tr><th style="width:28px">Chọn</th><th>Sản phẩm</th><th>Giá bán</th><th>Trạng thái</th></tr></thead><tbody id="super-sale-body"></tbody></table></div>
             </div>
           </div>
           <div class="acard">
@@ -930,7 +932,12 @@ function saveSuperSaleIds(){ localStorage.setItem('da_super_sale_ids',JSON.strin
 function renderSuperSale(){
   const tb=document.getElementById('super-sale-body'); if(!tb) return;
   const selected = new Set(superSaleIds);
-  tb.innerHTML = adminProds.map(p => {
+  const sorted = [...adminProds].sort((a,b) => {
+    const as = selected.has(String(a.id)) ? 0 : 1;
+    const bs = selected.has(String(b.id)) ? 0 : 1;
+    return as - bs;
+  });
+  tb.innerHTML = sorted.map(p => {
     const active = selected.has(String(p.id));
     return `
     <tr>
@@ -955,6 +962,7 @@ function toggleSuperSale(id, checked){
   }
   saveSuperSaleIds();
   renderSuperSalePreview();
+  syncSuperSaleToWebsite();
 }
 
 function saveSuperSale(){
