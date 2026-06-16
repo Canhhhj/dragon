@@ -321,12 +321,16 @@ window.websiteIntegration = {
     };
 
     let saleProducts = [];
+    let saleDiscounts = {};
     try {
       const state = window.DragonState.getState();
       const selectedIds = (state && state.superSaleProductIds) || [];
       if (selectedIds.length) {
         const byId = Object.fromEntries(window.products.map(p => [String(p.id), p]));
-        saleProducts = selectedIds.map(String).map(id => byId[id]).filter(Boolean).slice(0, 10);
+        saleProducts = selectedIds.map(item => byId[String(item.id)]).filter(Boolean).slice(0, 10);
+        selectedIds.forEach(item => {
+          saleDiscounts[String(item.id)] = Number(item.discount) || 0;
+        });
       }
     } catch (e) {
       // ignore and fallback below
@@ -343,19 +347,21 @@ window.websiteIntegration = {
 
     let html = '';
     saleProducts.forEach(p => {
+      const discount = saleDiscounts[String(p.id)] || p.discount || 0;
+      const salePrice = discount > 0 ? Math.round(p.price * (1 - discount / 100)) : p.price;
       html += `
         <div class="product-card" data-id="${p.id}">
           <div class="product-img">
             <img src="${p.img}" alt="${escHtml(p.name)}" onerror="this.src='https://placehold.co/300x300/f8f8f8/ccc?text=Giay'"/>
             ${p.soldOut ? '<span class="badge-soldout">Hết hàng</span>' : ''}
             ${p.status === 'preorder' ? '<span class="badge-preorder">Đặt trước</span>' : ''}
-            ${p.discount > 0 ? `<span class="badge-sale">-${p.discount}%</span>` : ''}
+            ${discount > 0 ? `<span class="badge-sale">-${discount}%</span>` : ''}
           </div>
           <div class="product-info">
             <div class="product-name">${p.name}</div>
             <div class="product-price">
-              ${p.price ? `<span class="price-new">${fmtMoney(p.price)}</span>` : '<span class="price-soldout">Liên hệ</span>'}
-              ${p.oldPrice > p.price ? `<span class="price-old">${fmtMoney(p.oldPrice)}</span>` : ''}
+              ${salePrice ? `<span class="price-new">${fmtMoney(salePrice)}</span>` : '<span class="price-soldout">Liên hệ</span>'}
+              ${p.oldPrice > salePrice ? `<span class="price-old">${fmtMoney(p.oldPrice)}</span>` : ''}
             </div>
           </div>
           <button class="add-cart-btn ${p.soldOut ? 'disabled' : ''}" ${p.soldOut ? 'disabled' : ''}>${p.soldOut ? 'HẾT HÀNG' : 'THÊM VÀO GIỎ'}</button>
