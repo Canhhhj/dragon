@@ -930,17 +930,19 @@ function saveSuperSaleIds(){ localStorage.setItem('da_super_sale_ids',JSON.strin
 function renderSuperSale(){
   const tb=document.getElementById('super-sale-body'); if(!tb) return;
   const selected = new Set(superSaleIds);
-  tb.innerHTML = adminProds.map(p => `
+  tb.innerHTML = adminProds.map(p => {
+    const active = selected.has(String(p.id));
+    return `
     <tr>
-      <td><input type="checkbox" ${selected.has(String(p.id))?'checked':''} onchange="toggleSuperSale('${p.id}', this.checked)"/></td>
+      <td><input type="checkbox" ${active?'checked':''} onchange="toggleSuperSale('${p.id}', this.checked)"/></td>
       <td><div style="display:flex;align-items:center;gap:11px">
         <div class="prod-img-cell">${p.img?`<img src="${p.img}" alt="" onerror="this.style.display='none'"/>`:'👟'}</div>
-        <div><div style="font-weight:600;color:#fff;margin-bottom:2px">${p.name}</div><div style="font-size:11px;color:var(--muted)">${p.desc||''}</div></div>
+        <div><div style="font-weight:600;color:#fff;margin-bottom:2px">${p.name}${active?'<span class="sbadge done" style="margin-left:8px">Đang hiển thị</span>':''}</div><div style="font-size:11px;color:var(--muted)">${p.desc||''}</div></div>
       </div></td>
       <td style="color:var(--red);font-weight:700;white-space:nowrap">${fmtM(p.price)}</td>
       <td>${p.status==='soldout'?'<span class="sbadge cancelled">Hết hàng</span>':p.status==='preorder'?'<span class="sbadge processing">Đặt trước</span>':'<span class="sbadge done">Còn hàng</span>'}</td>
     </tr>
-  `).join('');
+  `}).join('');
   renderSuperSalePreview();
 }
 
