@@ -931,6 +931,12 @@ function saveSuperSaleIds(){ localStorage.setItem('da_super_sale_ids',JSON.strin
 
 function renderSuperSale(){
   const tb=document.getElementById('super-sale-body'); if(!tb) return;
+  const validIds = new Set(adminProds.map(p => String(p.id)));
+  const cleaned = superSaleIds.filter(id => validIds.has(String(id)));
+  if(cleaned.length !== superSaleIds.length){
+    superSaleIds = cleaned;
+    saveSuperSaleIds();
+  }
   const selected = new Set(superSaleIds);
   const sorted = [...adminProds].sort((a,b) => {
     const as = selected.has(String(a.id)) ? 0 : 1;
