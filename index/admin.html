@@ -862,25 +862,39 @@ document.getElementById('tpw-btn').addEventListener('click',function(){
 
 document.getElementById('login-form').addEventListener('submit',function(e){
   e.preventDefault();
-  const btn = document.getElementById('login-btn');
-  const user = document.getElementById('l-user').value.trim();
-  const pw   = document.getElementById('l-pw').value;
-  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Đang kiểm tra...';
-  btn.disabled=true;
-  setTimeout(()=>{
-    btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg> Đăng nhập';
-    btn.disabled=false;
-    const c = getCreds();
-    if(user===c.username && pw===c.password){
-      const err=document.getElementById('lerr'); err.style.display='none';
-      sessionStorage.setItem('da_sess',JSON.stringify({username:c.username,display:c.display||c.username}));
-      enterAdmin(c.display||c.username);
-    } else {
-      const err=document.getElementById('lerr');
-      err.style.display='flex'; err.style.animation='none';
-      void err.offsetWidth; err.style.animation='shake .4s ease';
-    }
-  },700);
+  e.stopPropagation();
+  console.log('[login] submit fired, user:', document.getElementById('l-user').value);
+  try {
+    const btn = document.getElementById('login-btn');
+    const user = document.getElementById('l-user').value.trim();
+    const pw   = document.getElementById('l-pw').value;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Đang kiểm tra...';
+    btn.disabled=true;
+    setTimeout(()=>{
+      try {
+        btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg> Đăng nhập';
+        btn.disabled=false;
+        const c = getCreds();
+        console.log('[login] creds:', c.username);
+        if(user===c.username && pw===c.password){
+          const err=document.getElementById('lerr'); err.style.display='none';
+          sessionStorage.setItem('da_sess',JSON.stringify({username:c.username,display:c.display||c.username}));
+          enterAdmin(c.display||c.username);
+        } else {
+          const err=document.getElementById('lerr');
+          err.style.display='flex'; err.style.animation='none';
+          void err.offsetWidth; err.style.animation='shake .4s ease';
+        }
+      } catch(err) {
+        console.error('[login] inner error:', err);
+        btn.disabled=false;
+        btn.innerHTML='Đăng nhập';
+      }
+    },700);
+  } catch(err) {
+    console.error('[login] outer error:', err);
+  }
+  return false;
 });
 
 function enterAdmin(name){
@@ -942,131 +956,122 @@ let promos = JSON.parse(localStorage.getItem('da_promos')||'null') || [
 function savePromos(){ localStorage.setItem('da_promos',JSON.stringify(promos)); }
 
 // Super sale - use product name as key to match admin and website
-let superSaleIds = JSON.parse(localStorage.getItem('da_super_sale_ids')||'null') || [];
-function saveSuperSaleIds(){ localStorage.setItem('da_super_sale_ids',JSON.stringify(superSaleIds)); }
+// ============================================================
+// SUPER SALE (Siêu khuyến mãi) - Đơn giản, dùng ID sản phẩm
+// ============================================================
+// Lưu mảng [{id, discount}] vào localStorage key 'da_super_sale'.
+// Web đọc key này để hiển thị.
 
-function normalizeSuperSale(){
-  if(!superSaleIds.length) return;
-  const first = superSaleIds[0];
-  // old format: ["1","2"] or ["name1","name2"] -> new format: [{name:"name", discount:0}, ...]
-  if(typeof first === 'string'){
-    console.log('[superSale] migrate string -> object', superSaleIds);
-    const mapped = superSaleIds.map(item => {
-      const prod = adminProds.find(p => String(p.id) === String(item));
-      return prod ? { name: prod.name, discount: 0 } : { name: String(item), discount: 0 };
-    });
-    superSaleIds = mapped;
-    saveSuperSaleIds();
-  }
-  // migrate from id-based object to name-based
-  if(first && typeof first === 'object' && first.id !== undefined && first.name === undefined){
-    console.log('[superSale] migrate id-based object -> name-based');
-    const migrated = superSaleIds.map(item => {
-      const prod = adminProds.find(p => String(p.id) === String(item.id));
-      return prod ? { name: prod.name, discount: item.discount || 0 } : null;
-    }).filter(Boolean);
-    if(migrated.length){
-      superSaleIds = migrated;
-      saveSuperSaleIds();
-    }
-  }
-  console.log('[superSale] normalized', superSaleIds);
+function getSuperSaleItems() {
+  try { return JSON.parse(localStorage.getItem('da_super_sale') || '[]'); }
+  catch (e) { return []; }
+}
+function setSuperSaleItems(arr) {
+  localStorage.setItem('da_super_sale', JSON.stringify(arr));
+}
+function isInSuperSale(id) {
+  return getSuperSaleItems().some(x => String(x.id) === String(id));
+}
+function getSuperSaleDiscount(id) {
+  const item = getSuperSaleItems().find(x => String(x.id) === String(id));
+  return item ? Number(item.discount) || 0 : 0;
 }
 
-function getSuperSaleMeta(name){
-  const meta = superSaleIds.find(x => x.name === name);
-  return meta ? meta.discount : 0;
-}
-
-function updateSuperSaleDiscount(name, discount){
-  const idx = superSaleIds.findIndex(x => x.name === name);
-  if(idx !== -1){
-    superSaleIds[idx] = { name, discount: Number(discount) || 0 };
+function renderSuperSale() {
+  const tb = document.getElementById('super-sale-body');
+  if (!tb) return;
+  if (!adminProds || !adminProds.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Chưa có sản phẩm. Vào mục "Sản phẩm" để thêm.</td></tr>';
+    renderSuperSalePreview();
+    return;
   }
-}
-
-function renderSuperSale(){
-  normalizeSuperSale();
-  const tb=document.getElementById('super-sale-body'); if(!tb) return;
-  const validNames = new Set(adminProds.map(p => p.name));
-  const cleaned = superSaleIds.filter(x => validNames.has(x.name));
-  if(cleaned.length !== superSaleIds.length){
-    superSaleIds = cleaned;
-    saveSuperSaleIds();
-  }
-  const sorted = [...adminProds].sort((a,b) => {
-    const as = superSaleIds.some(x => x.name === a.name) ? 0 : 1;
-    const bs = superSaleIds.some(x => x.name === b.name) ? 0 : 1;
-    return as - bs;
+  const items = getSuperSaleItems();
+  const sorted = [...adminProds].sort((a, b) => {
+    return (isInSuperSale(b.id) ? 1 : 0) - (isInSuperSale(a.id) ? 1 : 0);
   });
   tb.innerHTML = sorted.map(p => {
-    const active = superSaleIds.some(x => x.name === p.name);
-    const discount = getSuperSaleMeta(p.name);
+    const checked = isInSuperSale(p.id);
+    const discount = getSuperSaleDiscount(p.id);
     return `
-    <tr>
-      <td><input type="checkbox" ${active?'checked':''} onchange="toggleSuperSale('${p.id}', this.checked)"/></td>
-      <td><div style="display:flex;align-items:center;gap:11px">
-        <div class="prod-img-cell">${p.img?`<img src="${p.img}" alt="" onerror="this.style.display='none'"/>`:'👟'}</div>
-        <div><div style="font-weight:600;color:#fff;margin-bottom:2px">${p.name}${active?'<span class="sbadge done" style="margin-left:8px">Đang hiển thị</span>':''}</div><div style="font-size:11px;color:var(--muted)">${p.desc||''}</div></div>
-      </div></td>
-      <td style="color:var(--red);font-weight:700;white-space:nowrap">${fmtM(p.price)}</td>
-      <td>
-        <input type="number" class="fsel" style="width:72px;padding:4px 6px" value="${discount}" min="0" max="100" onchange="updateSuperSale('${p.id}', this.value)"/>
-      </td>
-      <td>${p.status==='soldout'?'<span class="sbadge cancelled">Hết hàng</span>':p.status==='preorder'?'<span class="sbadge processing">Đặt trước</span>':'<span class="sbadge done">Còn hàng</span>'}</td>
-    </tr>
-  `}).join('');
+      <tr>
+        <td><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleSuperSale('${p.id}', this.checked)"/></td>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            <img src="${p.img || ''}" style="width:40px;height:40px;border-radius:6px;object-fit:cover" onerror="this.style.display='none'"/>
+            <div>
+              <div style="font-weight:600">${p.name || ''}</div>
+              <div style="font-size:11px;color:var(--muted)">${p.brand || ''}</div>
+            </div>
+          </div>
+        </td>
+        <td>${p.price ? fmtM(p.price) : '<span style="color:var(--muted)">Liên hệ</span>'}</td>
+        <td><input type="number" min="0" max="99" value="${discount}" style="width:60px;padding:4px 8px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:6px;color:#fff" onchange="updateSuperSaleDiscount('${p.id}', this.value)"/></td>
+        <td>${p.status === 'soldout' ? '<span class="sbadge cancelled">Hết hàng</span>' : p.status === 'preorder' ? '<span class="sbadge processing">Đặt trước</span>' : '<span class="sbadge done">Còn hàng</span>'}</td>
+      </tr>
+    `;
+  }).join('');
   renderSuperSalePreview();
 }
 
-function toggleSuperSale(id, checked){
-  const prod = adminProds.find(p => String(p.id) === String(id));
-  if(!prod) return;
-  const name = prod.name;
-  if(checked){
-    if(!superSaleIds.some(x => x.name === name)) superSaleIds.push({ name, discount: 0 });
+function toggleSuperSale(id, checked) {
+  let items = getSuperSaleItems();
+  if (checked) {
+    if (!items.some(x => String(x.id) === String(id))) {
+      items.push({ id: String(id), discount: 0 });
+    }
   } else {
-    superSaleIds = superSaleIds.filter(x => x.name !== name);
+    items = items.filter(x => String(x.id) !== String(id));
   }
-  saveSuperSaleIds();
+  setSuperSaleItems(items);
   renderSuperSale();
   syncSuperSaleToWebsite();
 }
 
-function updateSuperSale(id, discount){
-  const prod = adminProds.find(p => String(p.id) === String(id));
-  if(!prod) return;
-  updateSuperSaleDiscount(prod.name, discount);
-  saveSuperSaleIds();
-  renderSuperSalePreview();
+function updateSuperSaleDiscount(id, discount) {
+  let items = getSuperSaleItems();
+  const idx = items.findIndex(x => String(x.id) === String(id));
+  if (idx !== -1) {
+    items[idx].discount = Number(discount) || 0;
+    setSuperSaleItems(items);
+    renderSuperSalePreview();
+    syncSuperSaleToWebsite();
+  }
+}
+
+function saveSuperSale() {
+  setSuperSaleItems(getSuperSaleItems());
+  toast('Đã lưu cài đặt siêu khuyến mãi', 'success');
   syncSuperSaleToWebsite();
 }
 
-function saveSuperSale(){
-  saveSuperSaleIds();
-  toast('Đã lưu cài đặt siêu khuyến mãi','success');
-  syncSuperSaleToWebsite();
+// Đẩy danh sách sang website thông qua dragon_state để web đọc được
+function syncSuperSaleToWebsite() {
+  const s = getState();
+  s.superSaleProductIds = getSuperSaleItems();
+  localStorage.setItem('dragon_state', JSON.stringify(s));
+  // Phát storage event cho các tab khác (cross-tab)
+  window.dispatchEvent(new StorageEvent('storage', {
+    key: 'dragon_state',
+    newValue: localStorage.getItem('dragon_state')
+  }));
 }
 
-function syncSuperSaleToWebsite(){
-  const s=getState();
-  s.superSaleProductIds = superSaleIds;
-  localStorage.setItem('dragon_state',JSON.stringify(s));
-}
-
-function renderSuperSalePreview(){
+function renderSuperSalePreview() {
   const preview = document.getElementById('super-sale-preview');
   const empty = document.getElementById('super-sale-empty');
-  if(!preview || !empty) return;
-  const items = adminProds.filter(p => superSaleIds.some(x => x.name === p.name)).slice(0,10);
-  if(!items.length){
+  if (!preview || !empty) return;
+  const items = getSuperSaleItems()
+    .map(it => adminProds.find(p => String(p.id) === String(it.id)))
+    .filter(Boolean)
+    .slice(0, 10);
+  if (!items.length) {
     preview.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
   preview.innerHTML = items.map(p => {
-    const discount = getSuperSaleMeta(p.name);
+    const discount = getSuperSaleDiscount(p.id);
     return `
     <div class="product-card">
       <div class="product-img">

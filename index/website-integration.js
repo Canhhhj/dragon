@@ -90,6 +90,9 @@ window.websiteIntegration = {
     // Sync brand nav bar from admin
     this.syncBrandsToNavBar();
 
+    // Render sale section on init
+    setTimeout(() => this.renderSaleSection(), 300);
+
     // Sync website data to admin (if running on website)
     this.syncWebsiteDataToAdmin();
 
@@ -98,6 +101,14 @@ window.websiteIntegration = {
       this.syncAdminProductsToPage();
       this.syncBrandAndBannerToPage();
       this.syncBrandsToNavBar();
+      this.renderSaleSection();
+    });
+
+    // Listen for storage changes (cross-tab sync)
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'dragon_state') {
+        this.renderSaleSection();
+      }
     });
 
     // Auto-sync website state periodically
@@ -199,47 +210,29 @@ window.websiteIntegration = {
   syncAdminProductsToPage() {
     const adminProducts = window.DragonState.getAdminProducts();
     console.log('[integration] syncAdminProductsToPage - admin products:', adminProducts?.length || 0);
-    
+
     if (!adminProducts) return;
 
-    // Try to update window.products if it exists
-    if (typeof window.products !== 'undefined' && Array.isArray(window.products)) {
-      console.log('[integration] Updating window.products from', window.products.length, 'to', adminProducts.length);
-      
-      window.products = adminProducts.map(prod => ({
-        id: prod.id ? String(prod.id) : String(prod.name).replace(/\s+/g, '-').toLowerCase(),
-        name: prod.name,
-        img: prod.img || 'https://via.placeholder.com/300',
-        img2: prod.img2 || '',
-        img3: prod.img3 || '',
-        price: prod.price,
-        oldPrice: prod.oldPrice || 0,
-        soldOut: prod.status === 'soldout',
-        brand: prod.brand || 'Khác',
-        discount: prod.oldPrice && prod.price ? Math.round((1 - prod.price / prod.oldPrice) * 100) : 0,
-        sale: false,
-        sizes: (prod.sizes || '38,39,40,41,42,43,44').split(',').filter(s => s.trim()),
-        stock: prod.stock || 10,
-        sku: prod.id || 'SKU-' + Date.now(),
-        desc: prod.desc || '',
-        details: prod.details || [],
-        tags: prod.tags || '',
-        status: prod.status,
-        card: null
-      }));
-      
-      console.log('[integration] window.products updated to:', window.products.length);
+    // Keep a separate list for sale section only - don't overwrite window.products
+    // (window.products already contains the hardcoded HTML product list)
+    window.adminProductsForSale = adminProducts.map(prod => ({
+      id: prod.id ? String(prod.id) : String(prod.name).replace(/\s+/g, '-').toLowerCase(),
+      name: prod.name,
+      img: prod.img || 'https://via.placeholder.com/300',
+      price: prod.price,
+      oldPrice: prod.oldPrice || 0,
+      soldOut: prod.status === 'soldout',
+      brand: prod.brand || 'Khác',
+      discount: 0,
+      sale: true,
+      status: prod.status
+    }));
 
-      // Trigger dynamic re-render on the page
-      if (typeof window.renderProductGrid === 'function') {
-        window.renderProductGrid();
-      }
+    console.log('[integration] window.adminProductsForSale updated to:', window.adminProductsForSale.length);
 
-      // Sync the sale/hot deals section too
-      this.renderSaleSection();
-    } else {
-      console.log('[integration] window.products not yet defined');
-    }
+    // Only re-render the sale/hot deals section, do NOT touch other sections
+    // (other sections like "Sản phẩm mới", "Bán chạy" use window.products from HTML)
+    this.renderSaleSection();
   },
 
   // Sync Logo, Brand, and Banner settings from admin state to page
@@ -303,8 +296,10 @@ window.websiteIntegration = {
   // Render the sale / hot deals section dynamically
   renderSaleSection() {
     const saleGrid = document.querySelector('#sale-section .product-grid');
-    if (!saleGrid) return;
-    if (typeof window.products === 'undefined' || !Array.isArray(window.products)) return;
+    if (!saleGrid) {
+      console.warn('[integration] saleGrid not found');
+      return;
+    }
 
     // Helper functions for localized rendering
     const fmtMoney = (val) => {
@@ -320,34 +315,63 @@ window.websiteIntegration = {
       }[char]));
     };
 
+    const adminList = (typeof window.adminProductsForSale !== 'undefined' && Array.isArray(window.adminProductsForSale))
+      ? window.adminProductsForSale
+      : [];
+    const htmlList = (typeof window.products !== 'undefined' && Array.isArray(window.products))
+      ? window.products
+      : [];
+
+    // Combined source: admin first, then HTML hardcoded products (avoid dups by name)
+    const seenNames = new Set();
+    const combined = [];
+    adminList.forEach(p => {
+      const key = String(p.name || '').toLowerCase();
+      if (key && !seenNames.has(key)) { seenNames.add(key); combined.push(p); }
+    });
+    htmlList.forEach(p => {
+      const key = String(p.name || '').toLowerCase();
+      if (key && !seenNames.has(key)) { seenNames.add(key); combined.push(p); }
+    });
+
+    console.log('[integration] renderSaleSection - adminList:', adminList.length, 'htmlList:', htmlList.length, 'combined:', combined.length);
+
+    if (!combined.length) {
+      console.warn('[integration] combined empty, keeping HTML hardcoded');
+      return;
+    }
+
     let saleProducts = [];
     let saleDiscounts = {};
+    let hasAdminSelection = false;
     try {
       const state = window.DragonState.getState();
       let selectedIds = (state && state.superSaleProductIds) || [];
+      console.log('[integration] superSaleProductIds from state:', selectedIds);
       if (selectedIds.length) {
+        hasAdminSelection = true;
         if (typeof selectedIds[0] === 'string') {
           selectedIds = selectedIds.map(name => ({ name: String(name), discount: 0 }));
         }
         if (selectedIds[0] && typeof selectedIds[0] === 'object' && selectedIds[0].id !== undefined && selectedIds[0].name === undefined) {
-          const byId = Object.fromEntries(window.products.map(p => [String(p.id), p]));
+          const byId = Object.fromEntries(combined.map(p => [String(p.id), p]));
           selectedIds = selectedIds.map(item => {
             const p = byId[String(item.id)];
             return p ? { name: p.name, discount: Number(item.discount) || 0 } : null;
           }).filter(Boolean);
         }
-        const byName = Object.fromEntries(window.products.map(p => [String(p.name), p]));
+        const byName = Object.fromEntries(combined.map(p => [String(p.name), p]));
         saleProducts = selectedIds.map(item => byName[String(item.name)]).filter(Boolean).slice(0, 10);
         selectedIds.forEach(item => {
           saleDiscounts[String(item.name)] = Number(item.discount) || 0;
         });
       }
-    } catch (e) {
-      // ignore and fallback below
-    }
+    } catch (e) { /* ignore */ }
 
-    if (!saleProducts.length) {
-      saleProducts = window.products.filter(p => p.discount > 0 || p.oldPrice > p.price || p.soldOut).slice(0, 10);
+    // If admin selected nothing → leave section empty (do not fallback to HTML)
+    if (!hasAdminSelection) {
+      saleGrid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 40px 0;">Chưa có sản phẩm khuyến mãi. Vào trang quản trị để thêm.</div>';
+      return;
     }
 
     if (saleProducts.length === 0) {
@@ -596,4 +620,29 @@ setTimeout(() => {
   console.log('[integration] window.products available:', typeof window.products !== 'undefined');
   window.websiteIntegration.init();
 }, 500);
+
+// Auto-refresh sale section when admin updates dragon_state in another tab
+window.addEventListener('storage', (e) => {
+  if (e.key === 'dragon_state' || e.key === 'da_super_sale' || e.key === 'da_prods') {
+    console.log('[integration] storage changed:', e.key, '- re-syncing');
+    try {
+      window.websiteIntegration.syncAdminProductsToPage();
+    } catch (err) {
+      console.warn('[integration] re-sync failed', err);
+    }
+  }
+});
+
+// Also poll every 3s in case storage event doesn't fire (same tab / different browser)
+setInterval(() => {
+  try {
+    const lastSync = window.__lastSuperSaleSync || 0;
+    const current = (JSON.parse(localStorage.getItem('dragon_state') || '{}').superSaleProductIds || []).length;
+    if (current !== lastSync) {
+      console.log('[integration] Poll detected change, re-syncing');
+      window.__lastSuperSaleSync = current;
+      window.websiteIntegration.syncAdminProductsToPage();
+    }
+  } catch (e) { /* ignore */ }
+}, 3000);
 
