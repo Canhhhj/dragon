@@ -507,7 +507,6 @@ window.websiteIntegration = {
   // slider when the tabs overflow horizontally.
   renderSneakerTabs() {
     const tabsContainer = document.getElementById('sneaker-brand-tabs');
-    const wrap = document.querySelector('.sneaker-tabs-wrap');
     const titleEl = document.getElementById('sneaker-section-title');
     if (!tabsContainer) return;
 
@@ -549,37 +548,22 @@ window.websiteIntegration = {
       });
     });
 
-    // Slider arrows — only enable when overflow exists
-    const prevBtn = document.getElementById('sneaker-arrow-prev');
-    const nextBtn = document.getElementById('sneaker-arrow-next');
+    // Fade edges: show no-overflow class when everything fits, otherwise mask shows fade
+    const wrap = document.getElementById('sneaker-tabs-wrap');
 
-    const updateArrows = () => {
+    const updateFade = () => {
       if (!wrap) return;
       const hasOverflow = tabsContainer.scrollWidth > tabsContainer.clientWidth + 2;
-      wrap.classList.toggle('has-overflow', hasOverflow);
-      if (prevBtn) prevBtn.disabled = tabsContainer.scrollLeft <= 2;
-      if (nextBtn) nextBtn.disabled = tabsContainer.scrollLeft + tabsContainer.clientWidth >= tabsContainer.scrollWidth - 2;
+      wrap.classList.toggle('no-overflow', !hasOverflow);
     };
 
-    if (prevBtn && !prevBtn.dataset.wired) {
-      prevBtn.dataset.wired = '1';
-      prevBtn.addEventListener('click', () => {
-        tabsContainer.scrollBy({ left: -Math.max(120, tabsContainer.clientWidth * 0.6), behavior: 'smooth' });
-      });
-    }
-    if (nextBtn && !nextBtn.dataset.wired) {
-      nextBtn.dataset.wired = '1';
-      nextBtn.addEventListener('click', () => {
-        tabsContainer.scrollBy({ left: Math.max(120, tabsContainer.clientWidth * 0.6), behavior: 'smooth' });
-      });
-    }
-    if (wrap && !wrap.dataset.scrollWired) {
+    if (!wrap.dataset.scrollWired) {
       wrap.dataset.scrollWired = '1';
-      tabsContainer.addEventListener('scroll', updateArrows, { passive: true });
-      window.addEventListener('resize', updateArrows);
+      tabsContainer.addEventListener('scroll', updateFade, { passive: true });
+      window.addEventListener('resize', updateFade);
     }
     // Run once after layout
-    setTimeout(updateArrows, 50);
+    setTimeout(updateFade, 50);
   },
 
   // Setup order sync
