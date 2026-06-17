@@ -78,9 +78,6 @@ window.websiteIntegration = {
 
     console.log('[integration] Initializing website integration');
 
-    // Import products from website to admin if not already done
-    this.importProductsFromWeb();
-
     // Sync products from admin
     this.syncAdminProductsToPage();
 
@@ -548,69 +545,6 @@ window.websiteIntegration = {
         console.log('Order synced to admin:', order);
       }
     };
-  },
-
-  // Import website hardcoded products to Admin Panel database (localStorage)
-  importProductsFromWeb() {
-    // Check if we have already imported products
-    if (localStorage.getItem('da_imported_from_web') === 'true') {
-      return;
-    }
-
-    // Get the products currently parsed from the HTML (in window.products)
-    if (typeof window.products === 'undefined' || !Array.isArray(window.products) || window.products.length === 0) {
-      return;
-    }
-
-    console.log('[integration] Importing products from website to admin...');
-    
-    // Get existing admin products
-    let adminProds = [];
-    try {
-      adminProds = JSON.parse(localStorage.getItem('da_prods') || '[]');
-    } catch(e) {}
-
-    // Merge: for each website product, if it's not in adminProds (by name), add it.
-    let importedCount = 0;
-    window.products.forEach(p => {
-      const exists = adminProds.some(ap => ap.name.trim().toLowerCase() === p.name.trim().toLowerCase());
-      if (!exists) {
-        // Map website product structure to admin product structure
-        const newAdminProd = {
-          id: p.id || 'prod-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-          name: p.name,
-          brand: p.brand || 'Khác',
-          price: p.price || 0,
-          oldPrice: p.oldPrice || 0,
-          stock: p.stock || 10,
-          status: p.soldOut ? 'soldout' : 'available',
-          img: p.img || '',
-          img2: p.img2 || '',
-          img3: p.img3 || '',
-          desc: p.desc || (p.brand + ' chính hãng, phong cách thể thao'),
-          details: p.details && p.details.length > 0 ? p.details : [
-            p.brand + ' chính hãng',
-            'Thiết kế thời trang, êm ái',
-            'Phù hợp nhiều hoạt động thể thao & dạo phố'
-          ],
-          sizes: p.sizes ? p.sizes.join(',') : '38,39,40,41,42,43,44',
-          tags: p.tags || ''
-        };
-        adminProds.push(newAdminProd);
-        importedCount++;
-      }
-    });
-
-    if (importedCount > 0) {
-      localStorage.setItem('da_prods', JSON.stringify(adminProds));
-      // Also update the main state
-      const state = window.DragonState.getState();
-      state.adminProducts = adminProds;
-      window.DragonState.setState(state);
-      console.log(`[integration] Successfully imported ${importedCount} products to Admin Panel!`);
-    }
-
-    localStorage.setItem('da_imported_from_web', 'true');
   }
 };
 
@@ -620,29 +554,4 @@ setTimeout(() => {
   console.log('[integration] window.products available:', typeof window.products !== 'undefined');
   window.websiteIntegration.init();
 }, 500);
-
-// Auto-refresh sale section when admin updates dragon_state in another tab
-window.addEventListener('storage', (e) => {
-  if (e.key === 'dragon_state' || e.key === 'da_super_sale' || e.key === 'da_prods') {
-    console.log('[integration] storage changed:', e.key, '- re-syncing');
-    try {
-      window.websiteIntegration.syncAdminProductsToPage();
-    } catch (err) {
-      console.warn('[integration] re-sync failed', err);
-    }
-  }
-});
-
-// Also poll every 3s in case storage event doesn't fire (same tab / different browser)
-setInterval(() => {
-  try {
-    const lastSync = window.__lastSuperSaleSync || 0;
-    const current = (JSON.parse(localStorage.getItem('dragon_state') || '{}').superSaleProductIds || []).length;
-    if (current !== lastSync) {
-      console.log('[integration] Poll detected change, re-syncing');
-      window.__lastSuperSaleSync = current;
-      window.websiteIntegration.syncAdminProductsToPage();
-    }
-  } catch (e) { /* ignore */ }
-}, 3000);
 
