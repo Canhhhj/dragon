@@ -1748,7 +1748,7 @@
 <div class="section" id="sneaker-section" style="padding-top: 8px;">
   <div class="section-header">
     <div class="section-title" id="sneaker-section-title">👟 Giày Sneaker</div>
-    <a href="#giay-khac" class="view-all">Xem tất cả »</a>
+    <a href="#" class="view-all" id="sneaker-view-all">Xem tất cả »</a>
   </div>
   <div class="sneaker-tabs-wrap" id="sneaker-tabs-wrap">
     <div class="brand-tabs" id="sneaker-brand-tabs"><!-- rendered dynamically --></div>
@@ -4474,23 +4474,8 @@ function applySneakerFilter(brandKey, forceExpand) {
   sneakerGrid.innerHTML = html;
   bindSneakerCards(sneakerGrid);
 
-  // Render "Xem tất cả" button if matched count exceeds LIMIT
-  if (matched.length > LIMIT) {
-    const wrap = document.createElement('div');
-    wrap.className = 'show-more-wrap';
-    const btn = document.createElement('button');
-    btn.className = 'show-more-btn' + (sneakerExpanded ? ' expanded' : '');
-    btn.type = 'button';
-    const arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-    if (sneakerExpanded) {
-      btn.innerHTML = 'Thu gọn ' + arrowSvg;
-    } else {
-      btn.innerHTML = 'Xem tất cả ' + matched.length + ' sản phẩm ' + arrowSvg;
-    }
-    btn.addEventListener('click', () => applySneakerFilter(brandKey, !sneakerExpanded));
-    wrap.appendChild(btn);
-    sneakerGrid.appendChild(wrap);
-  }
+  // (Inline "Xem tất cả" button removed — use the section's top-right
+  // "Xem tất cả »" link to scroll back to the top of the home page.)
 }
 
 // Initialize: show first tab with the correct brand-key (including 'all' for Trang chủ)
@@ -4704,6 +4689,16 @@ window.initNavScroll = function initNavScroll() {
 };
 
 initNavScroll();
+
+// Sneaker section 'Xem tất cả »' link: scroll back to top of home page
+(function wireSneakerViewAll() {
+  const link = document.getElementById('sneaker-view-all');
+  if (!link) return;
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
 </script>
 </body>
 </html>
