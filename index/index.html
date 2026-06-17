@@ -4474,15 +4474,42 @@ function applySneakerFilter(brandKey, forceExpand) {
   sneakerGrid.innerHTML = html;
   bindSneakerCards(sneakerGrid);
 
-  // (Inline "Xem tất cả" button removed — use the section's top-right
-  // "Xem tất cả »" link to scroll back to the top of the home page.)
+  // Render "Xem tất cả / Thu gọn" button under the grid when there are
+  // more products than LIMIT for the current brand filter. The section
+  // header still has its own "Xem tất cả »" link that scrolls to the
+  // section; this one EXPANDS the grid in place.
+  if (matched.length > LIMIT) {
+    const wrap = document.createElement('div');
+    wrap.className = 'show-more-wrap';
+    const btn = document.createElement('button');
+    btn.className = 'show-more-btn' + (sneakerExpanded ? ' expanded' : '');
+    btn.type = 'button';
+    const arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+    if (sneakerExpanded) {
+      btn.innerHTML = 'Thu gọn ' + arrowSvg;
+    } else {
+      btn.innerHTML = 'Xem tất cả ' + matched.length + ' sản phẩm ' + arrowSvg;
+    }
+    btn.addEventListener('click', () => applySneakerFilter(brandKey, !sneakerExpanded));
+    wrap.appendChild(btn);
+    sneakerGrid.appendChild(wrap);
+  }
 }
 
-// Initialize: show first tab with the correct brand-key (including 'all' for Trang chủ)
-const firstActiveTab = document.querySelector('.brand-tab.active');
-if (firstActiveTab && sneakerGrid) {
-  const initKey = firstActiveTab.dataset.brandKey || brandKeyFromTab(textOf(firstActiveTab));
+// Initialize: always default to the 'Trang Chủ' (all products) tab on a
+// fresh page load. Any stale 'active' class from a cached HTML build is
+// cleared so reloads always land on the home tab with the first 20 products.
+document.querySelectorAll('.brand-tab').forEach(item => item.classList.remove('active'));
+const homeTab = document.querySelector('.brand-tab[data-brand-key="all"]')
+  || document.querySelector('.brand-tab');
+if (homeTab) {
+  homeTab.classList.add('active');
+}
+if (homeTab && sneakerGrid) {
+  const initKey = homeTab.dataset.brandKey || 'all';
   applySneakerFilter(initKey, false);
+  window.currentBrandFilter = homeTab.dataset.brandName || 'Trang Chủ';
+  window.currentBrandKey = initKey;
 }
 
 document.querySelectorAll('.brand-tab').forEach(tab => {
