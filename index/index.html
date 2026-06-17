@@ -1,12 +1,48 @@
 <!DOCTYPE html>
+<!-- Dragon Activiti Website v=14-fouc6-clean — FOUC fix: 3-layer hide + clean reveal -->
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <meta name="theme-color" content="#1a1a1a" />
 <title>Dragon Activiti - Giày chính hãng thể thao nam nữ</title>
+<style>html{visibility:hidden}</style>
+<script>
+  // FOUC prevention: read dragon_state from localStorage and patch the
+  // <title> + hide the body ASAP so the browser tab + first paint show
+  // the latest brand data, not the hardcoded values from index.html.
+  // website-integration.js (loaded at end of <body>) will reveal the
+  // body once it has finished applying admin-synced logo/banner/etc.
+  (function () {
+    // 1. Patch <title> immediately from localStorage (before any paint).
+    try {
+      var raw = localStorage.getItem('dragon_state');
+      if (raw) {
+        var s = JSON.parse(raw);
+        var name = (s && s.logo && s.logo.name) || '';
+        var highlight = (s && s.logo && s.logo.highlight) || '';
+        if (name) {
+          var t = name;
+          if (highlight) t += ' ' + highlight;
+          t += ' - Giày chính hãng thể thao nam nữ';
+          document.title = t;
+        }
+      }
+    } catch (e) { /* ignore */ }
+    // 2. Hide body via inline style (highest precedence, no CSS race).
+    // The end-of-body reveal script adds `da-paint-ready` to <html> which
+    // the inline <style> uses to undo this.
+    document.documentElement.style.visibility = 'hidden';
+  })();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
+  /* Reinforce the inline-hidden state until JS signals ready. !important
+     makes sure no later stylesheet can accidentally reveal the body. */
+  html:not(.da-paint-ready) { visibility: hidden !important; }
   
   :root {
     --red: #e53935;
@@ -666,6 +702,11 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 168px), 1fr));
     gap: clamp(12px, 2vw, 18px);
   }
+  /* The sneaker grid is hidden until the JS layer has re-rendered it via
+     applySneakerFilter(). Otherwise the user briefly sees every hardcoded
+     product before the "first 20 + Xem tất cả" layout kicks in. */
+  .product-grid.sneaker-grid-pending { visibility: hidden; }
+  .product-grid.sneaker-grid-ready { visibility: visible; }
   .product-card {
     background: var(--surface);
     border-radius: var(--radius);
@@ -960,6 +1001,9 @@
     display: flex;
     justify-content: center;
     padding: 18px 0 4px;
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
   }
   .show-more-btn {
     display: inline-flex;
@@ -1754,7 +1798,7 @@
     <div class="brand-tabs" id="sneaker-brand-tabs"><!-- rendered dynamically --></div>
   </div>
 
-  <div class="product-grid" id="sneaker-grid">
+  <div class="product-grid sneaker-grid-pending" id="sneaker-grid">
     <!-- Product 1: Giày Air Jordan 1 Low SE Coconut Milk Black HQ3437-101 (nike) -->
     <div class="product-card" data-brand="nike">
       <div class="product-img">
@@ -3776,9 +3820,9 @@
   </button>
 </div>
 
-<script src="data-bridge.js"></script>
-<script src="website-integration.js?v=9"></script>
-<script src="integration-test.js"></script>
+<script src="data-bridge.js?v=fouc6"></script>
+<script src="website-integration.js?v=14"></script>
+<script src="integration-test.js?v=fouc6"></script>
 
 <script>
 const money = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
@@ -4379,6 +4423,14 @@ document.querySelectorAll('nav a, .footer-col a, .cat-card, .view-all').forEach(
     }
     if (normalize(label).includes('trang chu')) return showListing();
     if (link.classList.contains('view-all')) {
+      // Sneaker section's top-right "Xem tất cả »" should land on the
+      // "Trang Chủ" tab (all brands), not force-jump to Nike. The handler
+      // is fully wired in the standalone `wireSneakerViewAll` IIFE below,
+      // so just stop propagation here to avoid the generic branch below.
+      if (link.id === 'sneaker-view-all') {
+        event.preventDefault();
+        return;
+      }
       const href = normalize(link.getAttribute('href') || '');
       if (href.includes('khuyen-mai')) return filterProducts('khuyến mãi');
       if (href.includes('giay-khac')) return filterProducts('');
@@ -4432,7 +4484,17 @@ function bindSneakerCards(root) {
 
 function applySneakerFilter(brandKey, forceExpand) {
   window.currentBrandKey = brandKey;
-  sneakerExpanded = !!forceExpand;
+  // Resolve sneakerExpanded from the caller's intent:
+  //   - forceExpand === true|false  → use that
+  //   - forceExpand === undefined   → keep current state (so the user's
+  //                                   expand/collapse choice survives
+  //                                   re-renders triggered by the admin
+  //                                   integration, cross-tab sync, etc.)
+  if (forceExpand === undefined) {
+    // no-op: keep sneakerExpanded as-is
+  } else {
+    sneakerExpanded = !!forceExpand;
+  }
   window.sneakerExpanded = sneakerExpanded;
   const LIMIT = 20;
 
@@ -4443,6 +4505,12 @@ function applySneakerFilter(brandKey, forceExpand) {
 
   const matched = products.filter(p => productMatchesBrand(p, brandKey));
   const displayProducts = sneakerExpanded ? matched : matched.slice(0, LIMIT);
+
+  // Once we've rendered the filtered grid, flip the visibility class so
+  // the user no longer sees the static HTML product list that lived in
+  // #sneaker-grid before this script ran.
+  sneakerGrid.classList.remove('sneaker-grid-pending');
+  sneakerGrid.classList.add('sneaker-grid-ready');
 
   if (!matched.length) {
     sneakerGrid.innerHTML = renderSneakerEmpty(brandKey);
@@ -4484,13 +4552,19 @@ function applySneakerFilter(brandKey, forceExpand) {
     const btn = document.createElement('button');
     btn.className = 'show-more-btn' + (sneakerExpanded ? ' expanded' : '');
     btn.type = 'button';
+    btn.setAttribute('aria-label', sneakerExpanded ? 'Thu gọn danh sách sản phẩm' : 'Xem tất cả sản phẩm');
     const arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
     if (sneakerExpanded) {
       btn.innerHTML = 'Thu gọn ' + arrowSvg;
     } else {
       btn.innerHTML = 'Xem tất cả ' + matched.length + ' sản phẩm ' + arrowSvg;
     }
-    btn.addEventListener('click', () => applySneakerFilter(brandKey, !sneakerExpanded));
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('[sneaker] toggle Xem tất cả → expand=' + !sneakerExpanded);
+      applySneakerFilter(brandKey, !sneakerExpanded);
+    });
     wrap.appendChild(btn);
     sneakerGrid.appendChild(wrap);
   }
@@ -4522,6 +4596,26 @@ document.querySelectorAll('.brand-tab').forEach(tab => {
     syncNavActive(textOf(tab).replace(/^Giày\s+/i, ''));
     scrollToSneakerSection();
   });
+});
+
+// Delegated click handler for the in-grid "Xem tất cả / Thu gọn" button.
+// Delegation is used so the button still works even when innerHTML reset
+// wipes out any direct listeners (e.g. after dragonStateChanged re-renders
+// the grid).
+document.addEventListener('click', (event) => {
+  const btn = event.target.closest('.show-more-btn');
+  if (!btn) return;
+  const grid = btn.closest('#sneaker-grid');
+  if (!grid) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const activeTab = document.querySelector('#sneaker-brand-tabs .brand-tab.active')
+    || document.querySelector('#sneaker-brand-tabs .brand-tab[data-sneaker-home="1"]')
+    || document.querySelector('#sneaker-brand-tabs .brand-tab');
+  const brandKey = activeTab ? (activeTab.dataset.brandKey || 'all') : (window.currentBrandKey || 'all');
+  const nextExpand = !window.sneakerExpanded;
+  console.log('[sneaker] delegated click on .show-more-btn → brand=' + brandKey + ', expand=' + nextExpand);
+  applySneakerFilter(brandKey, nextExpand);
 });
 
 modal.addEventListener('click', event => {
@@ -4733,23 +4827,74 @@ function scrollToSneakerHome() {
   window.scrollTo({ top: targetY, behavior: 'smooth' });
 }
 
+// Helper: activate the "Trang Chủ" tab (data-brand-key="all") and re-render
+// the sneaker grid with the first 20 products + "Xem tất cả" button.
+// Used by the top-nav "Trang chủ" link and the sneaker section's
+// "Xem tất cả »" link, both of which previously mis-routed to Nike.
+function activateSneakerHomeTab() {
+  document.querySelectorAll('.brand-tab').forEach(t => t.classList.remove('active'));
+  const homeTab = document.querySelector('.brand-tab[data-brand-key="all"]');
+  if (homeTab) homeTab.classList.add('active');
+  if (typeof applySneakerFilter === 'function') {
+    applySneakerFilter('all', false);
+  }
+  if (typeof syncNavActive === 'function') {
+    syncNavActive('all');
+  }
+}
+
 // Sneaker section 'Xem tất cả »' link: scroll so the 'Giày Trang Chủ' tab is visible
+// and make sure the home tab (all brands) is active with the first 20 products.
 (function wireSneakerViewAll() {
   const link = document.getElementById('sneaker-view-all');
   if (!link) return;
   link.addEventListener('click', (e) => {
     e.preventDefault();
+    activateSneakerHomeTab();
     scrollToSneakerHome();
   });
 })();
 
-// Top-nav 'Trang chủ' link: also scroll to the 'Giày Trang Chủ' tab
+// Top-nav 'Trang chủ' link: also scroll to the 'Giày Trang Chủ' tab and
+// activate the home tab (all brands) so the user sees the home-products
+// grid (first 20 + "Xem tất cả" button), not the Nike default.
 document.querySelectorAll('a[data-scroll-to="sneaker-section"]').forEach(link => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
+    activateSneakerHomeTab();
     scrollToSneakerHome();
   });
 });
+</script>
+<script>
+  // Reveal the body once every script (data-bridge.js, website-integration.js,
+  // integration-test.js) has finished running and applied admin-synced
+  // logo / banner / footer / products to the DOM. We have THREE layers of
+  // hide that need to be undone:
+  //   (a) <style>html{visibility:hidden}</style> in <head>
+  //   (b) document.documentElement.style.visibility = 'hidden' from <head> script
+  //   (c) html:not(.da-paint-ready) { visibility: hidden !important; } CSS rule
+  // (a) is a static stylesheet, so we override with inline style 'visible'.
+  // (b) we clear via style.visibility = ''.
+  // (c) we stop matching by adding 'da-paint-ready' to <html>.
+  (function () {
+    var reveal = function () {
+      document.documentElement.classList.add('da-paint-ready');
+      document.documentElement.style.visibility = 'visible';
+    };
+    // Wait for DOM + a double-rAF so any deferred sync work (banner img
+    // swaps, lazy font measurements, etc.) has a chance to settle.
+    var ready = function () {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(reveal);
+      });
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', ready);
+    } else {
+      ready();
+    }
+  })();
 </script>
 </body>
 </html>

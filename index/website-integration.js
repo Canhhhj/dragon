@@ -187,8 +187,27 @@ window.websiteIntegration = {
           nav.querySelectorAll('a').forEach(n => n.classList.remove('active'));
           a.classList.add('active');
           window.currentBrandFilter = 'all';
-          if (typeof window.filterBrandNav === 'function') window.filterBrandNav('all');
-          else if (typeof window.filterProducts === 'function') window.filterProducts('all');
+          window.currentBrandKey = 'all';
+          // Reset the in-place "Xem tất cả" expansion so we land on the
+          // first 20 products + the "Xem tất cả" button again.
+          window.sneakerExpanded = false;
+          // Apply the "Trang Chủ" filter (brandKey='all' → all brands)
+          // without forcing scroll, then scroll to the top so the user
+          // sees the hero + sale section + the sneaker tabs in order.
+          if (typeof window.applySneakerFilter === 'function') {
+            window.applySneakerFilter('all', false);
+          } else if (typeof window.filterBrandNav === 'function') {
+            window.filterBrandNav('all', { scroll: false });
+          } else if (typeof window.filterProducts === 'function') {
+            window.filterProducts('all');
+          }
+          if (typeof window.syncBrandTabs === 'function') {
+            window.syncBrandTabs('all');
+          }
+          if (typeof window.syncNavActive === 'function') {
+            window.syncNavActive('all');
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         };
       } else {
         a.setAttribute('data-brand', filterTarget);
@@ -262,25 +281,30 @@ window.websiteIntegration = {
     if (state.banner) {
       const heroVisualImg = document.querySelector('.hero-visual img');
       if (heroVisualImg && state.banner.heroUrl) heroVisualImg.src = state.banner.heroUrl;
-      
-      if (state.banner.heroH1 !== undefined) {
+
+      // Only override H1/desc/topbar when the admin has set a NON-EMPTY
+      // value. Previously we used `!== undefined`, which meant an empty
+      // string still overwrote the hardcoded default with `<br><span></span>`,
+      // and combined with a stale browser cache this looked like a flash of
+      // "old" content. Empty == "use whatever the HTML default is".
+      if (state.banner.heroH1) {
         const heroH1 = document.querySelector('h1');
         if (heroH1) {
-          heroH1.innerHTML = `${state.banner.heroH1 || ''}<br><span class="hero-highlight">${state.banner.heroSub || ''}</span>`;
+          heroH1.innerHTML = `${state.banner.heroH1}<br><span class="hero-highlight">${state.banner.heroSub || ''}</span>`;
         }
       }
-      
-      if (state.banner.heroDesc !== undefined) {
+
+      if (state.banner.heroDesc) {
         const heroP = document.querySelector('.hero-text p:not(.hero-eyebrow)');
         if (heroP) heroP.textContent = state.banner.heroDesc;
       }
-      
-      if (state.banner.topbarText !== undefined) {
+
+      if (state.banner.topbarText) {
         const topbarText = document.querySelector('.topbar-text');
         if (topbarText) topbarText.textContent = state.banner.topbarText;
       }
-      
-      if (state.banner.topbarCode !== undefined) {
+
+      if (state.banner.topbarCode) {
         const topbarPill = document.querySelector('.topbar-pill');
         if (topbarPill) {
           topbarPill.textContent = state.banner.topbarCode;
@@ -291,7 +315,7 @@ window.websiteIntegration = {
           }
         }
       }
-      
+
       if (state.banner.topbarColor) {
         const topbar = document.querySelector('.topbar');
         if (topbar) topbar.style.background = state.banner.topbarColor;
@@ -517,11 +541,19 @@ window.websiteIntegration = {
 
     const state = (window.DragonState && window.DragonState.getState) ? window.DragonState.getState() : {};
     const cfg = state.sneakerConfig;
-    const DEFAULT_VISIBLE = ['Nike','Adidas','MLB','Puma','Fila'];
+    const DEFAULT_VISIBLE = ['Trang Chủ','Nike','Adidas','MLB','Puma','Fila'];
     const title = (cfg && cfg.title) ? cfg.title : 'Giày Sneaker';
-    const visibleBrands = (cfg && Array.isArray(cfg.visibleBrands) && cfg.visibleBrands.length)
+    let visibleBrands = (cfg && Array.isArray(cfg.visibleBrands) && cfg.visibleBrands.length)
       ? cfg.visibleBrands
       : DEFAULT_VISIBLE;
+    // Always make sure the first tab is "Trang Chủ" so the user lands on
+    // the all-brands grid (first 20 products + "Xem tất cả" button) on a
+    // fresh page load instead of jumping straight to Nike.
+    const hasHome = visibleBrands.some(b => {
+      const slug = (b || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+      return slug === 'trangchu' || slug === 'trang chu' || b === 'Trang Chủ' || b === 'Trang chủ';
+    });
+    if (!hasHome) visibleBrands = ['Trang Chủ', ...visibleBrands];
 
     if (titleEl) titleEl.textContent = '👟 ' + title;
 
@@ -572,6 +604,33 @@ window.websiteIntegration = {
         if (typeof scrollToSneakerSection === 'function') scrollToSneakerSection();
       });
     });
+
+    // After (re)building the tab strip, ensure the grid reflects the
+    // currently-active tab. Without this, a fresh page load leaves the
+    // static HTML products in #sneaker-grid untouched, so the user sees
+    // every hardcoded product instead of the first 20 + "Xem tất cả".
+    //
+    // Preserve the user's expand/collapse state when the active tab
+    // hasn't changed. Otherwise (new tab, first paint, brand switch)
+    // collapse the grid back to LIMIT.
+    const activeTab = tabsContainer.querySelector('.brand-tab.active')
+      || tabsContainer.querySelector('.brand-tab[data-sneaker-home="1"]')
+      || tabsContainer.querySelector('.brand-tab');
+    if (activeTab && typeof applySneakerFilter === 'function') {
+      const activeKey = activeTab.dataset.brandKey || 'all';
+      activeTab.classList.add('active');
+      tabsContainer.querySelectorAll('.brand-tab').forEach(t => {
+        if (t !== activeTab) t.classList.remove('active');
+      });
+      window.currentBrandFilter = activeTab.dataset.brandName || activeTab.textContent.trim();
+      const sameTabAsBefore = window.currentBrandKey === activeKey;
+      window.currentBrandKey = activeKey;
+      // undefined → "respect existing window.sneakerExpanded if same tab"
+      applySneakerFilter(activeKey, sameTabAsBefore ? undefined : false);
+      if (typeof syncNavActive === 'function') {
+        syncNavActive(window.currentBrandFilter);
+      }
+    }
 
     // Fade edges: show no-overflow class when everything fits, otherwise mask shows fade
     const wrap = document.getElementById('sneaker-tabs-wrap');
