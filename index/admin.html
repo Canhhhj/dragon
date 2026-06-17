@@ -1929,20 +1929,26 @@ function renderSneakerConfig(){
   const list = document.getElementById('sneaker-brand-list');
   if(!list) return;
 
-  // Show only brand-type items (not nav links) to keep sneaker section meaningful
-  const brandItems = brands.filter(b => b.type !== 'link');
-  if(!brandItems.length){
+  // Show ALL items from "Quản lý Hãng giày" (both 'brand' and 'link' types)
+  // so the count matches what user sees in the Brands page.
+  // Mark 'link' items with a small badge so it's clear they're nav items.
+  if(!brands.length){
     list.innerHTML = '<div style="padding:18px;color:var(--muted);text-align:center;grid-column:1/-1">Chưa có hãng nào. Vào mục "Hãng giày" để thêm.</div>';
     updateSneakerCounter(0, 0);
     return;
   }
 
-  list.innerHTML = brandItems.map(b => {
+  list.innerHTML = brands.map(b => {
     const checked = cfg.visibleBrands.includes(b.name) ? 'checked' : '';
+    const isLink = b.type === 'link';
+    const badge = isLink
+      ? '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--muted);text-transform:uppercase;letter-spacing:0.5px">Link</span>'
+      : '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,215,0,0.12);color:var(--gold);text-transform:uppercase;letter-spacing:0.5px">Brand</span>';
     return `
       <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">
         <input type="checkbox" class="sneaker-brand-cb" data-name="${esc(b.name)}" ${checked} style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold)"/>
         <span style="flex:1;font-size:13px">${esc(b.name)}</span>
+        ${badge}
       </label>
     `;
   }).join('');
