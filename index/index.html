@@ -3777,7 +3777,7 @@
 </div>
 
 <script src="data-bridge.js"></script>
-<script src="website-integration.js?v=8"></script>
+<script src="website-integration.js?v=9"></script>
 <script src="integration-test.js"></script>
 
 <script>
@@ -4717,25 +4717,37 @@ window.initNavScroll = function initNavScroll() {
 
 initNavScroll();
 
-// Sneaker section 'Xem tất cả »' link: smooth scroll to the sneaker section itself
+// Smooth-scroll to the 'Giày Trang Chủ' tab inside the sneaker section,
+// accounting for the sticky site header so the tab lands a bit below
+// the top of the viewport (where the user can clearly see it).
+function scrollToSneakerHome() {
+  const tab = document.getElementById('sneaker-home-tab');
+  if (!tab) {
+    document.getElementById('sneaker-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+  const header = document.querySelector('.site-header');
+  const headerH = header ? Math.round(header.getBoundingClientRect().height) : 0;
+  const tabTop = tab.getBoundingClientRect().top + window.pageYOffset;
+  const targetY = Math.max(0, tabTop - headerH - 12);
+  window.scrollTo({ top: targetY, behavior: 'smooth' });
+}
+
+// Sneaker section 'Xem tất cả »' link: scroll so the 'Giày Trang Chủ' tab is visible
 (function wireSneakerViewAll() {
   const link = document.getElementById('sneaker-view-all');
-  const target = document.getElementById('sneaker-section');
-  if (!link || !target) return;
+  if (!link) return;
   link.addEventListener('click', (e) => {
     e.preventDefault();
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToSneakerHome();
   });
 })();
 
-// Top-nav links with [data-scroll-to="<section-id>"]: smooth scroll to that section
-document.querySelectorAll('a[data-scroll-to]').forEach(link => {
-  const id = link.getAttribute('data-scroll-to');
-  const target = id ? document.getElementById(id) : null;
-  if (!target) return;
+// Top-nav 'Trang chủ' link: also scroll to the 'Giày Trang Chủ' tab
+document.querySelectorAll('a[data-scroll-to="sneaker-section"]').forEach(link => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollToSneakerHome();
   });
 });
 </script>

@@ -547,11 +547,17 @@ window.websiteIntegration = {
       return 'Giày ' + n;
     };
 
-    tabsContainer.innerHTML = visibleBrands.map((b, i) => `
-      <div class="brand-tab${i === 0 ? ' active' : ''}"
-           data-brand-name="${b.replace(/"/g, '&quot;')}"
-           data-brand-key="${brandKeyOf(b)}">${fmt(b)}</div>
-    `).join('');
+    tabsContainer.innerHTML = visibleBrands.map((b, i) => {
+      const isHome = i === 0;
+      const attrs = [
+        'class="brand-tab' + (isHome ? ' active' : '') + '"',
+        'data-brand-name="' + b.replace(/"/g, '&quot;') + '"',
+        'data-brand-key="' + brandKeyOf(b) + '"',
+        isHome ? 'id="sneaker-home-tab"' : '',
+        isHome ? 'data-sneaker-home="1"' : '',
+      ].filter(Boolean).join(' ');
+      return `<div ${attrs}>${fmt(b)}</div>`;
+    }).join('');
 
     // Wire click handlers — pass the correct brand-key so productMatchesBrand works
     tabsContainer.querySelectorAll('.brand-tab').forEach(tab => {
