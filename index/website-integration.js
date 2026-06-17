@@ -4,7 +4,7 @@
  */
 
 const DEFAULT_NAV_BRANDS = [
-  { id: 'm-home', name: 'Trang chủ', logo: '', showOnNav: true, type: 'link' },
+  { id: 'm-home', name: 'Trang Chủ', logo: '', showOnNav: true, type: 'link' },
   { id: 'b-nike', name: 'Nike', logo: '', showOnNav: true, type: 'brand' },
   { id: 'b-adidas', name: 'Adidas', logo: '', showOnNav: true, type: 'brand' },
   { id: 'b-mlb', name: 'MLB', logo: '', showOnNav: true, type: 'brand' },
@@ -526,12 +526,12 @@ window.websiteIntegration = {
     if (titleEl) titleEl.textContent = '👟 ' + title;
 
     // Map brand name to the key that productMatchesBrand() understands.
-    // Special keys: 'all' (Trang chủ), 'khac', 'bongchuyen'
+    // Special keys: 'all' (Trang Chủ), 'khac', 'bongchuyen'
     const brandKeyOf = (name) => {
       const n = (name || '').trim();
       const slug = n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
-      // Trang chủ → all products
-      if (slug === 'trangchu' || n === 'Trang chủ') return 'all';
+      // Trang Chủ → all products
+      if (slug === 'trangchu' || n === 'Trang Chủ' || n === 'Trang chủ') return 'all';
       // Already normalised by brandKeyFromLabel in productMatchesBrand
       if (n === 'Giày Khác' || slug === 'giàykhác' || slug === 'giaykhac') return 'khac';
       if (n === 'Giày Bóng Chuyền' || slug === 'giàybóngchuyền' || slug === 'giaybongchuyen') return 'bongchuyen';
