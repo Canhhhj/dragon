@@ -87,6 +87,9 @@ window.websiteIntegration = {
     // Sync brand nav bar from admin
     this.syncBrandsToNavBar();
 
+    // Render sneaker tabs from admin config (title + visible brands)
+    this.renderSneakerTabs();
+
     // Render sale section on init
     setTimeout(() => this.renderSaleSection(), 300);
 
@@ -98,6 +101,7 @@ window.websiteIntegration = {
       this.syncAdminProductsToPage();
       this.syncBrandAndBannerToPage();
       this.syncBrandsToNavBar();
+      this.renderSneakerTabs();
       this.renderSaleSection();
     });
 
@@ -496,6 +500,86 @@ window.websiteIntegration = {
       // Silently handle errors
       console.error('Sync error:', e);
     }
+  },
+
+  // Render the sneaker tabs section dynamically from admin's sneakerConfig
+  // (visible brands list + section title). Also wires up the prev/next arrow
+  // slider when the tabs overflow horizontally.
+  renderSneakerTabs() {
+    const tabsContainer = document.getElementById('sneaker-brand-tabs');
+    const wrap = document.querySelector('.sneaker-tabs-wrap');
+    const titleEl = document.getElementById('sneaker-section-title');
+    if (!tabsContainer) return;
+
+    const state = (window.DragonState && window.DragonState.getState) ? window.DragonState.getState() : {};
+    const cfg = state.sneakerConfig;
+    const DEFAULT_VISIBLE = ['Nike','Adidas','MLB','Puma','Fila'];
+    const title = (cfg && cfg.title) ? cfg.title : 'Giày Sneaker';
+    const visibleBrands = (cfg && Array.isArray(cfg.visibleBrands) && cfg.visibleBrands.length)
+      ? cfg.visibleBrands
+      : DEFAULT_VISIBLE;
+
+    if (titleEl) titleEl.textContent = '👟 ' + title;
+
+    // Friendly prefix: "Giày X" — but skip if name already starts with "Giày"
+    const fmt = (name) => {
+      const n = (name || '').trim();
+      if (!n) return n;
+      if (/^gi[àa]y\s+/i.test(n)) return n;
+      return 'Giày ' + n;
+    };
+
+    tabsContainer.innerHTML = visibleBrands.map((b, i) => `
+      <div class="brand-tab${i === 0 ? ' active' : ''}" data-brand-name="${b.replace(/"/g, '&quot;')}">${fmt(b)}</div>
+    `).join('');
+
+    // Wire click handlers so existing tab logic works (applySneakerFilter + brand filter)
+    tabsContainer.querySelectorAll('.brand-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabsContainer.querySelectorAll('.brand-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const brandName = tab.dataset.brandName;
+        window.currentBrandFilter = brandName;
+        // Map brand name -> brand key used by applySneakerFilter
+        const brandKey = brandName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^giay\s+/, '').trim();
+        if (typeof applySneakerFilter === 'function') {
+          applySneakerFilter(brandKey, false);
+        }
+        if (typeof scrollToSneakerSection === 'function') scrollToSneakerSection();
+      });
+    });
+
+    // Slider arrows — only enable when overflow exists
+    const prevBtn = document.getElementById('sneaker-arrow-prev');
+    const nextBtn = document.getElementById('sneaker-arrow-next');
+
+    const updateArrows = () => {
+      if (!wrap) return;
+      const hasOverflow = tabsContainer.scrollWidth > tabsContainer.clientWidth + 2;
+      wrap.classList.toggle('has-overflow', hasOverflow);
+      if (prevBtn) prevBtn.disabled = tabsContainer.scrollLeft <= 2;
+      if (nextBtn) nextBtn.disabled = tabsContainer.scrollLeft + tabsContainer.clientWidth >= tabsContainer.scrollWidth - 2;
+    };
+
+    if (prevBtn && !prevBtn.dataset.wired) {
+      prevBtn.dataset.wired = '1';
+      prevBtn.addEventListener('click', () => {
+        tabsContainer.scrollBy({ left: -Math.max(120, tabsContainer.clientWidth * 0.6), behavior: 'smooth' });
+      });
+    }
+    if (nextBtn && !nextBtn.dataset.wired) {
+      nextBtn.dataset.wired = '1';
+      nextBtn.addEventListener('click', () => {
+        tabsContainer.scrollBy({ left: Math.max(120, tabsContainer.clientWidth * 0.6), behavior: 'smooth' });
+      });
+    }
+    if (wrap && !wrap.dataset.scrollWired) {
+      wrap.dataset.scrollWired = '1';
+      tabsContainer.addEventListener('scroll', updateArrows, { passive: true });
+      window.addEventListener('resize', updateArrows);
+    }
+    // Run once after layout
+    setTimeout(updateArrows, 50);
   },
 
   // Setup order sync

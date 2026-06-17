@@ -798,6 +798,36 @@
     box-shadow: 0 4px 12px rgba(229,57,53,0.25);
   }
 
+  /* SNEAKER TABS WRAP + ARROWS */
+  .sneaker-tabs-wrap {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .sneaker-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    color: #374151;
+    transition: all .15s;
+  }
+  .sneaker-arrow:hover { background: var(--red); color: #fff; border-color: var(--red); }
+  .sneaker-arrow svg { width: 18px; height: 18px; }
+  .sneaker-arrow-prev { left: -6px; }
+  .sneaker-arrow-next { right: -6px; }
+  .sneaker-tabs-wrap.has-overflow .sneaker-arrow { display: flex; }
+  .sneaker-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+
   /* CATEGORY BANNER */
   .category-banner {
     display: grid;
@@ -1721,17 +1751,17 @@
 <!-- SNEAKER TABS SECTION -->
 <div class="section" id="sneaker-section" style="padding-top: 8px;">
   <div class="section-header">
-    <div class="section-title">👟 Giày Sneaker</div>
+    <div class="section-title" id="sneaker-section-title">👟 Giày Sneaker</div>
     <a href="#giay-khac" class="view-all">Xem tất cả »</a>
   </div>
-  <div class="brand-tabs">
-    <div class="brand-tab active">Giày Nike</div>
-    <div class="brand-tab">Giày Adidas</div>
-    <div class="brand-tab">Giày MLB</div>
-    <div class="brand-tab">Giày Puma</div>
-    <div class="brand-tab">Giày Fila</div>
-    <div class="brand-tab">Giày Bóng Chuyền</div>
-    <div class="brand-tab">Giày Chính Hãng Khác</div>
+  <div class="sneaker-tabs-wrap">
+    <button class="sneaker-arrow sneaker-arrow-prev" id="sneaker-arrow-prev" type="button" aria-label="Trước">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="brand-tabs" id="sneaker-brand-tabs"><!-- rendered dynamically --></div>
+    <button class="sneaker-arrow sneaker-arrow-next" id="sneaker-arrow-next" type="button" aria-label="Sau">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
   </div>
 
   <div class="product-grid" id="sneaker-grid">

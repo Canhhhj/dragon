@@ -435,6 +435,10 @@ input,select,textarea{outline:none}
         <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-5 10 5-10 5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         Hãng giày
       </button>
+      <button class="nav-item" data-page="sneaker" onclick="goPage('sneaker')">
+        <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18v2H3zM6 12c0-3 2-5 6-5s6 2 6 5l-1 3H7z"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/></svg>
+        Giày sneaker
+      </button>
 
       <div class="nav-lbl" style="margin-top:8px">Kinh doanh</div>
       <button class="nav-item" data-page="orders" onclick="goPage('orders')">
@@ -707,6 +711,45 @@ input,select,textarea{outline:none}
       </div>
     </div>
     <!-- End Brand Management Page -->
+
+      <!-- ===== SNEAKER CONTENT ===== -->
+      <div class="apage" id="page-sneaker">
+        <h2 class="section-title" style="margin-bottom:16px">👟 Cấu hình mục Giày Sneaker</h2>
+        <div class="acard">
+          <div class="acard-head">
+            <div class="acard-title">
+              <svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;display:inline-block;vertical-align:-3px;margin-right:6px"><path d="M3 17h18v2H3zM6 12c0-3 2-5 6-5s6 2 6 5l-1 3H7z"/><circle cx="8" cy="11" r="1"/><circle cx="16" cy="11" r="1"/></svg>
+              Tiêu đề & hãng hiển thị
+            </div>
+          </div>
+          <div style="padding:18px">
+            <div class="frow one" style="margin-bottom:14px">
+              <div class="ffld">
+                <label>Tên mục hiển thị trên website</label>
+                <input type="text" id="sneaker-title" placeholder="Giày Sneaker" value="Giày Sneaker" maxlength="60"/>
+                <div style="font-size:11px;color:var(--muted);margin-top:6px">Đây là tiêu đề section sẽ hiện ở trang chủ website.</div>
+              </div>
+            </div>
+
+            <div style="font-weight:700;margin:6px 0 10px">Chọn hãng giày hiển thị (lấy từ mục 🏷️ Quản lý Hãng giày)</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Tick vào các hãng muốn hiển thị. Trên website, các hãng đã tick sẽ hiện thành tab và có thanh trượt ngang nếu nhiều hãng.</div>
+
+            <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+              <button class="btn ghost" type="button" onclick="sneakerToggleAll(true)">✓ Chọn tất cả</button>
+              <button class="btn ghost" type="button" onclick="sneakerToggleAll(false)">✗ Bỏ chọn tất cả</button>
+              <span id="sneaker-counter" style="align-self:center;color:var(--muted);font-size:12px"></span>
+            </div>
+
+            <div id="sneaker-brand-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;max-height:480px;overflow:auto;padding:4px;background:var(--surface2);border-radius:var(--radius-sm)"></div>
+
+            <button class="btn primary" style="width:100%;margin-top:14px;justify-content:center" onclick="saveSneakerConfig()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg>
+              Lưu cấu hình
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- End Sneaker Content Page -->
 
       <!-- ===== SUPER SALE ===== -->
       <div class="apage" id="page-super-sale">
@@ -1093,7 +1136,7 @@ function renderSuperSalePreview() {
 // ============================================================
 // NAVIGATION
 // ============================================================
-const pageMap={dashboard:'Dashboard',banner:'Banner & Logo',products:'Sản phẩm',promo:'Mã giảm giá','super-sale':'Siêu khuyến mãi',orders:'Đơn hàng',customers:'Khách hàng',settings:'Cài đặt',brands:'Hãng giày'};
+const pageMap={dashboard:'Dashboard',banner:'Banner & Logo',products:'Sản phẩm',promo:'Mã giảm giá','super-sale':'Siêu khuyến mãi',orders:'Đơn hàng',customers:'Khách hàng',settings:'Cài đặt',brands:'Hãng giày',sneaker:'Giày sneaker'};
 const subMap={dashboard:'Tổng quan',banner:'Nội dung website',products:'Nội dung website',promo:'Nội dung website','super-sale':'Nội dung website',orders:'Kinh doanh',customers:'Kinh doanh',settings:'Hệ thống',brands:'Nội dung website'};
 
 function goPage(pg){
@@ -1111,6 +1154,7 @@ function goPage(pg){
   if(pg==='super-sale') renderSuperSale();
   if(pg==='banner') loadBannerSettings();
   if(pg==='brands') renderBrands();
+  if(pg==='sneaker') renderSneakerConfig();
 }
 
 // ============================================================
@@ -1858,6 +1902,82 @@ function populateBrandSelects(){
   }
 }
 
+// ============================================================
+// SNEAKER CONTENT CONFIG (Giày Sneaker section on homepage)
+// ============================================================
+const SNEAKER_DEFAULT_VISIBLE = ['Nike','Adidas','MLB','Puma','Fila'];
+
+function getSneakerConfig(){
+  const state = (window.DragonState && window.DragonState.getState) ? window.DragonState.getState() : {};
+  return state.sneakerConfig || { title: 'Giày Sneaker', visibleBrands: SNEAKER_DEFAULT_VISIBLE.slice() };
+}
+
+function setSneakerConfig(cfg){
+  if(!window.DragonState) return;
+  const state = window.DragonState.getState();
+  state.sneakerConfig = cfg;
+  window.DragonState.setState(state);
+}
+
+function renderSneakerConfig(){
+  const brands = (typeof getBrandList === 'function') ? getBrandList() : [];
+  const cfg = getSneakerConfig();
+
+  const titleInput = document.getElementById('sneaker-title');
+  if(titleInput) titleInput.value = cfg.title || 'Giày Sneaker';
+
+  const list = document.getElementById('sneaker-brand-list');
+  if(!list) return;
+
+  // Show only brand-type items (not nav links) to keep sneaker section meaningful
+  const brandItems = brands.filter(b => b.type !== 'link');
+  if(!brandItems.length){
+    list.innerHTML = '<div style="padding:18px;color:var(--muted);text-align:center;grid-column:1/-1">Chưa có hãng nào. Vào mục "Hãng giày" để thêm.</div>';
+    updateSneakerCounter(0, 0);
+    return;
+  }
+
+  list.innerHTML = brandItems.map(b => {
+    const checked = cfg.visibleBrands.includes(b.name) ? 'checked' : '';
+    return `
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">
+        <input type="checkbox" class="sneaker-brand-cb" data-name="${esc(b.name)}" ${checked} style="width:16px;height:16px;cursor:pointer;accent-color:var(--gold)"/>
+        <span style="flex:1;font-size:13px">${esc(b.name)}</span>
+      </label>
+    `;
+  }).join('');
+
+  // attach change listeners to keep counter live
+  list.querySelectorAll('.sneaker-brand-cb').forEach(cb => {
+    cb.addEventListener('change', () => updateSneakerCounter());
+  });
+  updateSneakerCounter();
+}
+
+function updateSneakerCounter(){
+  const total = document.querySelectorAll('.sneaker-brand-cb').length;
+  const checked = document.querySelectorAll('.sneaker-brand-cb:checked').length;
+  const el = document.getElementById('sneaker-counter');
+  if(el) el.textContent = `Đã chọn ${checked}/${total} hãng`;
+}
+
+function sneakerToggleAll(value){
+  document.querySelectorAll('.sneaker-brand-cb').forEach(cb => { cb.checked = value; });
+  updateSneakerCounter();
+}
+
+function saveSneakerConfig(){
+  try {
+    const title = (document.getElementById('sneaker-title')?.value || '').trim() || 'Giày Sneaker';
+    const visibleBrands = [...document.querySelectorAll('.sneaker-brand-cb:checked')].map(cb => cb.dataset.name);
+    setSneakerConfig({ title, visibleBrands });
+    toast('Đã lưu cấu hình mục Giày Sneaker.', 'success');
+  } catch(err) {
+    console.error('[sneaker] save error', err);
+    toast('Lỗi lưu: ' + err.message, 'error');
+  }
+}
+
 function openBrandModal(id){
   const modal = document.getElementById('brand-modal');
   const brands = getBrandList();
@@ -1953,6 +2073,10 @@ function deleteBrand(id){
   renderBrands();
   renderProducts();
   toast('Đã xóa hãng "'+brand.name+'". Sản phẩm đã chuyển sang "Khác".','success');
+}
+
+function esc(value){
+  return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 // Initialize brand selects on page load
