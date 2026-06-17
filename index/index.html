@@ -1603,7 +1603,7 @@
     </button>
     <div class="nav-scroll-viewport">
       <nav id="main-nav">
-  <a href="#" class="active">Trang chủ</a>
+  <a href="#" data-scroll-to="sneaker-section" class="active">Trang chủ</a>
   <a href="#">Giày Nike</a>
   <a href="#">Giày Puma</a>
   <a href="#">Giày New Balance</a>
@@ -4690,15 +4690,27 @@ window.initNavScroll = function initNavScroll() {
 
 initNavScroll();
 
-// Sneaker section 'Xem tất cả »' link: scroll back to top of home page
+// Sneaker section 'Xem tất cả »' link: smooth scroll to the sneaker section itself
 (function wireSneakerViewAll() {
   const link = document.getElementById('sneaker-view-all');
-  if (!link) return;
+  const target = document.getElementById('sneaker-section');
+  if (!link || !target) return;
   link.addEventListener('click', (e) => {
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 })();
+
+// Top-nav links with [data-scroll-to="<section-id>"]: smooth scroll to that section
+document.querySelectorAll('a[data-scroll-to]').forEach(link => {
+  const id = link.getAttribute('data-scroll-to');
+  const target = id ? document.getElementById(id) : null;
+  if (!target) return;
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
 </script>
 </body>
 </html>
