@@ -90,6 +90,9 @@ window.websiteIntegration = {
     // Render sneaker tabs from admin config (title + visible brands)
     this.renderSneakerTabs();
 
+    // Render footer from admin config
+    this.renderFooter();
+
     // Render sale section on init
     setTimeout(() => this.renderSaleSection(), 300);
 
@@ -102,12 +105,14 @@ window.websiteIntegration = {
       this.syncBrandAndBannerToPage();
       this.syncBrandsToNavBar();
       this.renderSneakerTabs();
+      this.renderFooter();
       this.renderSaleSection();
     });
 
     // Listen for storage changes (cross-tab sync)
     window.addEventListener('storage', (e) => {
       if (e.key === 'dragon_state') {
+        this.renderFooter();
         this.renderSaleSection();
       }
     });
@@ -577,6 +582,170 @@ window.websiteIntegration = {
     }
     // Run once after layout
     setTimeout(updateFade, 50);
+  },
+
+  // Render footer from dragon_state.footerConfig (set by admin "Footer" page)
+  renderFooter() {
+    const state = (window.DragonState && window.DragonState.getState) ? window.DragonState.getState() : {};
+    const cfg = state.footerConfig;
+    if (!cfg) return; // keep static fallback
+
+    // Brand name + desc
+    const nameEl = document.getElementById('footer-brand-name');
+    if (nameEl && cfg.brandName) {
+      const parts = String(cfg.brandName).trim().split(/\s+/);
+      if (parts.length >= 2) {
+        nameEl.innerHTML = parts[0] + ' <span>' + parts.slice(1).join(' ') + '</span>';
+      } else {
+        nameEl.textContent = cfg.brandName;
+      }
+    }
+    const descEl = document.getElementById('footer-brand-desc');
+    if (descEl && cfg.brandDesc) descEl.textContent = cfg.brandDesc;
+
+    // Social links
+    const socialsEl = document.getElementById('footer-socials');
+    if (socialsEl) {
+      const socials = [
+        { name: 'Facebook',  url: cfg.facebook },
+        { name: 'Instagram', url: cfg.instagram },
+        { name: 'TikTok',    url: cfg.tiktok },
+        { name: 'Zalo',      url: cfg.zalo }
+      ].filter(s => s.url && String(s.url).trim());
+      if (socials.length) {
+        socialsEl.innerHTML = socials.map(s => {
+          const isExternal = /^https?:\/\//.test(s.url);
+          const attrs = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
+          return `<a href="${s.url}" ${attrs} style="color:#ccc; font-size:12px; border:1px solid #444; padding:5px 12px; border-radius:4px;">${s.name}</a>`;
+        }).join('');
+      }
+    }
+
+    // Parse a multiline list of "Label | URL" lines
+    const parseItems = (text) => {
+      if (!text) return [];
+      return String(text).split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(line => {
+        const idx = line.indexOf('|');
+        if (idx === -1) return { label: line.trim(), url: '#' };
+        return { label: line.slice(0, idx).trim(), url: line.slice(idx + 1).trim() || '#' };
+      });
+    };
+
+    // Render a footer column from title + items
+    const renderCol = (colEl, title, itemsText) => {
+      if (!colEl) return;
+      const items = parseItems(itemsText);
+      const oldH4 = colEl.querySelector('h4');
+      const oldTitle = oldH4 ? oldH4.textContent : '';
+      colEl.innerHTML = '';
+      const h4 = document.createElement('h4');
+      h4.textContent = title || oldTitle || '';
+      colEl.appendChild(h4);
+      if (items.length) {
+        const ul = document.createElement('ul');
+        ul.innerHTML = items.map(i => {
+          const isExternal = /^https?:\/\//.test(i.url);
+          const attrs = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
+          return `<li><a href="${i.url}" ${attrs}>${i.label}</a></li>`;
+        }).join('');
+        colEl.appendChild(ul);
+      }
+    };
+
+    renderCol(document.getElementById('footer-col-1'), cfg.col1Title, cfg.col1Items);
+    renderCol(document.getElementById('footer-col-2'), cfg.col2Title, cfg.col2Items);
+    renderCol(document.getElementById('footer-col-3'), cfg.col3Title, cfg.col3Items);
+
+    // Bottom bar
+    const cpEl = document.getElementById('footer-copyright');
+    if (cpEl && cfg.copyright) cpEl.textContent = cfg.copyright;
+    const crEl = document.getElementById('footer-credit');
+    if (crEl && cfg.credit) crEl.textContent = cfg.credit;
+  },
+
+  // Render footer from dragon_state.footerConfig (set by admin "Footer" page)
+  renderFooter() {
+    const state = (window.DragonState && window.DragonState.getState) ? window.DragonState.getState() : {};
+    const cfg = state.footerConfig;
+    if (!cfg) return; // keep static fallback
+
+    // Brand name + desc
+    const nameEl = document.getElementById('footer-brand-name');
+    if (nameEl && cfg.brandName) {
+      // Bold the first word(s) and keep "<span>Activiti</span>" style if present
+      const parts = String(cfg.brandName).trim().split(/\s+/);
+      if (parts.length >= 2) {
+        nameEl.innerHTML = parts[0] + ' <span>' + parts.slice(1).join(' ') + '</span>';
+      } else {
+        nameEl.textContent = cfg.brandName;
+      }
+    }
+    const descEl = document.getElementById('footer-brand-desc');
+    if (descEl && cfg.brandDesc) descEl.textContent = cfg.brandDesc;
+
+    // Social links
+    const socialsEl = document.getElementById('footer-socials');
+    if (socialsEl) {
+      const socials = [
+        { name: 'Facebook',  url: cfg.facebook },
+        { name: 'Instagram', url: cfg.instagram },
+        { name: 'TikTok',    url: cfg.tiktok },
+        { name: 'Zalo',      url: cfg.zalo }
+      ].filter(s => s.url && s.url.trim());
+      if (socials.length) {
+        socialsEl.innerHTML = socials.map(s => {
+          const isExternal = /^https?:\/\//.test(s.url);
+          const attrs = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
+          return `<a href="${s.url}" ${attrs} style="color:#ccc; font-size:12px; border:1px solid #444; padding:5px 12px; border-radius:4px;">${s.name}</a>`;
+        }).join('');
+      }
+    }
+
+    // Helper: parse a multiline list of "Label | URL" lines
+    const parseItems = (text) => {
+      if (!text) return [];
+      return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(line => {
+        const idx = line.indexOf('|');
+        if (idx === -1) return { label: line.trim(), url: '#' };
+        return { label: line.slice(0, idx).trim(), url: line.slice(idx + 1).trim() || '#' };
+      });
+    };
+
+    // Helper: render a footer column from title + items
+    const renderCol = (colEl, title, itemsText) => {
+      if (!colEl) return;
+      const items = parseItems(itemsText);
+      const h4 = colEl.querySelector('h4');
+      colEl.innerHTML = '';
+      if (h4) {
+        const t = title || (h4.textContent || '');
+        colEl.appendChild(h4);
+        h4.textContent = t;
+      } else {
+        const tEl = document.createElement('h4');
+        tEl.textContent = title || '';
+        colEl.appendChild(tEl);
+      }
+      if (items.length) {
+        const ul = document.createElement('ul');
+        ul.innerHTML = items.map(i => {
+          const isExternal = /^https?:\/\//.test(i.url);
+          const attrs = isExternal ? 'target="_blank" rel="noopener noreferrer"' : '';
+          return `<li><a href="${i.url}" ${attrs}>${i.label}</a></li>`;
+        }).join('');
+        colEl.appendChild(ul);
+      }
+    };
+
+    renderCol(document.getElementById('footer-col-1'), cfg.col1Title, cfg.col1Items);
+    renderCol(document.getElementById('footer-col-2'), cfg.col2Title, cfg.col2Items);
+    renderCol(document.getElementById('footer-col-3'), cfg.col3Title, cfg.col3Items);
+
+    // Bottom bar
+    const cpEl = document.getElementById('footer-copyright');
+    if (cpEl && cfg.copyright) cpEl.textContent = cfg.copyright;
+    const crEl = document.getElementById('footer-credit');
+    if (crEl && cfg.credit) crEl.textContent = cfg.credit;
   },
 
   // Setup order sync

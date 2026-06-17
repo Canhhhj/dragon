@@ -3708,20 +3708,23 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-grid">
-    <div class="footer-brand">
+  <div class="footer-grid" id="footer-grid">
+    <!-- Rendered dynamically from dragon_state.footerConfig in website-integration.js -->
+    <!-- Static fallback shown below is replaced at runtime when config exists. -->
+    <div class="footer-brand" id="footer-brand-col">
       <div class="brand-logo" style="margin-bottom:14px;">
         <span class="brand-mark">DA</span>
-        <span>Dragon <span>Activiti</span></span>
+        <span id="footer-brand-name">Dragon <span>Activiti</span></span>
       </div>
-      <p>Dragon Activiti chuyên cung cấp giày chính hãng nam nữ đến từ nhiều thương hiệu nổi tiếng như Adidas, Nike, MLB, Puma,... Cam kết chỉ bán hàng chính hãng!</p>
-      <div style="margin-top:16px; display:flex; gap:10px;">
+      <p id="footer-brand-desc">Dragon Activiti chuyên cung cấp giày chính hãng nam nữ đến từ nhiều thương hiệu nổi tiếng như Adidas, Nike, MLB, Puma,... Cam kết chỉ bán hàng chính hãng!</p>
+      <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap" id="footer-socials">
         <a href="https://www.facebook.com/profile.php?id=61577026714785" target="_blank" rel="noopener noreferrer" style="color:#ccc; font-size:12px; border:1px solid #444; padding:5px 12px; border-radius:4px;">Facebook</a>
         <a href="#" style="color:#ccc; font-size:12px; border:1px solid #444; padding:5px 12px; border-radius:4px;">Instagram</a>
         <a href="https://www.tiktok.com/@dragon.active" target="_blank" rel="noopener noreferrer" style="color:#ccc; font-size:12px; border:1px solid #444; padding:5px 12px; border-radius:4px;">TikTok</a>
+        <a href="#" style="color:#ccc; font-size:12px; border:1px solid #444; padding:5px 12px; border-radius:4px;">Zalo</a>
       </div>
     </div>
-    <div class="footer-col">
+    <div class="footer-col" id="footer-col-1">
       <h4>Sản phẩm</h4>
       <ul>
         <li><a href="#">Giày Nike</a></li>
@@ -3732,7 +3735,7 @@
         <li><a href="#">Giày Onitsuka Tiger</a></li>
       </ul>
     </div>
-    <div class="footer-col">
+    <div class="footer-col" id="footer-col-2">
       <h4>Chính sách</h4>
       <ul>
         <li><a href="#">Chính sách đổi trả</a></li>
@@ -3742,7 +3745,7 @@
         <li><a href="#">Hướng dẫn chọn size</a></li>
       </ul>
     </div>
-    <div class="footer-col">
+    <div class="footer-col" id="footer-col-3">
       <h4>Liên hệ</h4>
       <ul>
         <li><a href="#">📍 Hệ thống cửa hàng</a></li>
@@ -3754,8 +3757,8 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <p>© 2026 Dragon Activiti — Giày chính hãng uy tín</p>
-    <p>Thiết kế bởi Dragon Activiti Team</p>
+    <p id="footer-copyright">© 2026 Dragon Activiti — Giày chính hãng uy tín</p>
+    <p id="footer-credit">Thiết kế bởi Dragon Activiti Team</p>
   </div>
 </footer>
 
