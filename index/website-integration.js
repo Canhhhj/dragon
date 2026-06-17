@@ -535,8 +535,9 @@ window.websiteIntegration = {
       // Already normalised by brandKeyFromLabel in productMatchesBrand
       if (n === 'Giày Khác' || slug === 'giàykhác' || slug === 'giaykhac') return 'khac';
       if (n === 'Giày Bóng Chuyền' || slug === 'giàybóngchuyền' || slug === 'giaybongchuyen') return 'bongchuyen';
-      // Generic: strip "Giày " prefix then use as-is
-      return n.replace(/^gi[àa]y\s+/i, '').trim();
+      // Generic: strip "Giày " prefix then use as-is (lowercased + diacritics removed)
+      const stripped = n.replace(/^gi[àa]y\s+/i, '').trim();
+      return stripped.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     };
 
     // Friendly display name on tab — keep "Giày X" unless name already starts with it
