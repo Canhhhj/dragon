@@ -520,27 +520,40 @@ window.websiteIntegration = {
 
     if (titleEl) titleEl.textContent = '👟 ' + title;
 
-    // Friendly prefix: "Giày X" — but skip if name already starts with "Giày"
+    // Map brand name to the key that productMatchesBrand() understands.
+    // Special keys: 'all' (Trang chủ), 'khac', 'bongchuyen'
+    const brandKeyOf = (name) => {
+      const n = (name || '').trim();
+      const slug = n.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+      // Trang chủ → all products
+      if (slug === 'trangchu' || n === 'Trang chủ') return 'all';
+      // Already normalised by brandKeyFromLabel in productMatchesBrand
+      if (n === 'Giày Khác' || slug === 'giàykhác' || slug === 'giaykhac') return 'khac';
+      if (n === 'Giày Bóng Chuyền' || slug === 'giàybóngchuyền' || slug === 'giaybongchuyen') return 'bongchuyen';
+      // Generic: strip "Giày " prefix then use as-is
+      return n.replace(/^gi[àa]y\s+/i, '').trim();
+    };
+
+    // Friendly display name on tab — keep "Giày X" unless name already starts with it
     const fmt = (name) => {
       const n = (name || '').trim();
-      if (!n) return n;
       if (/^gi[àa]y\s+/i.test(n)) return n;
       return 'Giày ' + n;
     };
 
     tabsContainer.innerHTML = visibleBrands.map((b, i) => `
-      <div class="brand-tab${i === 0 ? ' active' : ''}" data-brand-name="${b.replace(/"/g, '&quot;')}">${fmt(b)}</div>
+      <div class="brand-tab${i === 0 ? ' active' : ''}"
+           data-brand-name="${b.replace(/"/g, '&quot;')}"
+           data-brand-key="${brandKeyOf(b)}">${fmt(b)}</div>
     `).join('');
 
-    // Wire click handlers so existing tab logic works (applySneakerFilter + brand filter)
+    // Wire click handlers — pass the correct brand-key so productMatchesBrand works
     tabsContainer.querySelectorAll('.brand-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         tabsContainer.querySelectorAll('.brand-tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        const brandName = tab.dataset.brandName;
-        window.currentBrandFilter = brandName;
-        // Map brand name -> brand key used by applySneakerFilter
-        const brandKey = brandName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/^giay\s+/, '').trim();
+        const brandKey = tab.dataset.brandKey;
+        window.currentBrandFilter = tab.dataset.brandName;
         if (typeof applySneakerFilter === 'function') {
           applySneakerFilter(brandKey, false);
         }

@@ -4490,18 +4490,20 @@ function applySneakerFilter(brandKey, forceExpand) {
   }
 }
 
-// Initialize: show first tab (Nike) with 4 items
+// Initialize: show first tab with the correct brand-key (including 'all' for Trang chủ)
 const firstActiveTab = document.querySelector('.brand-tab.active');
 if (firstActiveTab && sneakerGrid) {
-  applySneakerFilter(brandKeyFromTab(textOf(firstActiveTab)), false);
+  const initKey = firstActiveTab.dataset.brandKey || brandKeyFromTab(textOf(firstActiveTab));
+  applySneakerFilter(initKey, false);
 }
 
 document.querySelectorAll('.brand-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.brand-tab').forEach(item => item.classList.remove('active'));
     tab.classList.add('active');
+    const k = tab.dataset.brandKey || brandKeyFromTab(textOf(tab));
     window.currentBrandFilter = textOf(tab);
-    applySneakerFilter(brandKeyFromTab(textOf(tab)), false);
+    applySneakerFilter(k, false);
     syncNavActive(textOf(tab).replace(/^Giày\s+/i, ''));
     scrollToSneakerSection();
   });
