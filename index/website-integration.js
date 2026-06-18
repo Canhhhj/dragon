@@ -122,8 +122,41 @@ window.websiteIntegration = {
 
     // Override checkout to sync to admin
     this.setupCheckoutSync();
-    
-    console.log('[integration] Initialization complete');
+
+    // Reveal the body now that every sync has finished. Until this point
+    // the <head> FOUC script has been keeping <html> visibility:hidden,
+    // and any <style data-da-head-override> injection we did in <head>
+    // has already made the hardcoded logo / banner text reflect the
+    // admin-synced values from localStorage. The DOM-level syncs in
+    // init() (syncBrandAndBannerToPage, renderFooter, …) keep things
+    // consistent in case the CSS approach missed a field. We use a
+    // double-rAF to give the browser a chance to lay out + paint with
+    // the new content before we flip visibility.
+    this.syncAndReveal();
+  },
+
+  // Reveal the body after every sync in init() has run. The CSS-rule
+  // gate (html:not(.da-paint-ready)) and the inline style set in <head>
+  // are both undone here. We also schedule a hard-fail timeout so that
+  // if some sync throws, the user never stares at a blank page forever.
+  syncAndReveal() {
+    var dom = document.documentElement;
+    var reveal = function () {
+      dom.classList.add('da-paint-ready');
+      dom.style.visibility = 'visible';
+    };
+    // Hard fallback: if for any reason the normal path is delayed more
+    // than 2.5s (e.g. a CDN hiccup, a network script that hangs), reveal
+    // anyway. Better to show possibly-stale data than a white page.
+    setTimeout(function () {
+      if (!dom.classList.contains('da-paint-ready')) {
+        console.warn('[integration] reveal fallback fired (init slow)');
+        reveal();
+      }
+    }, 2500);
+    requestAnimationFrame(function () {
+      requestAnimationFrame(reveal);
+    });
   },
 
   // Sync admin brands to the website navigation bar
@@ -864,10 +897,23 @@ window.websiteIntegration = {
   }
 };
 
-// Start integration when ready - after all scripts and products variable initialized
-setTimeout(() => {
-  console.log('[integration] Delayed init starting...');
-  console.log('[integration] window.products available:', typeof window.products !== 'undefined');
-  window.websiteIntegration.init();
-}, 500);
+// Start integration when ready. We previously waited 500ms hoping that
+// window.products would be defined by then, but in practice data-bridge.js
+// (which defines it) is a <script> loaded BEFORE this file, so it's
+// already in scope. The 500ms wait was the main reason for the FOUC
+// flash — the page was revealed long before the new logo/banner had a
+// chance to apply. Init immediately; syncAndReveal() inside init()
+// handles the visibility gate, and a 2.5s hard-fail fallback there
+// guards against a stuck sync.
+(function startIntegration() {
+  function go() {
+    console.log('[integration] init starting; window.products =', typeof window.products);
+    window.websiteIntegration.init();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', go);
+  } else {
+    go();
+  }
+})();
 

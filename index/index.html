@@ -11,31 +11,102 @@
 <title>Dragon Activiti - Giày chính hãng thể thao nam nữ</title>
 <style>html{visibility:hidden}</style>
 <script>
-  // FOUC prevention: read dragon_state from localStorage and patch the
-  // <title> + hide the body ASAP so the browser tab + first paint show
-  // the latest brand data, not the hardcoded values from index.html.
-  // website-integration.js (loaded at end of <body>) will reveal the
-  // body once it has finished applying admin-synced logo/banner/etc.
+  // FOUC prevention: read dragon_state from localStorage and (1) patch the
+  // <title>, (2) inject inline <style> overrides so the hardcoded logo /
+  // banner / topbar values in <body> are replaced BEFORE the first paint.
+  // The end-of-body reveal step is handled by website-integration.js
+  // (see syncAndReveal there) — only after every sync finishes do we let
+  // the page show, so the user never sees a flash of the old hardcoded
+  // data. This script runs synchronously in <head> so its <style> is in
+  // place before the browser parses the body.
   (function () {
-    // 1. Patch <title> immediately from localStorage (before any paint).
     try {
       var raw = localStorage.getItem('dragon_state');
-      if (raw) {
-        var s = JSON.parse(raw);
-        var name = (s && s.logo && s.logo.name) || '';
-        var highlight = (s && s.logo && s.logo.highlight) || '';
-        if (name) {
-          var t = name;
-          if (highlight) t += ' ' + highlight;
-          t += ' - Giày chính hãng thể thao nam nữ';
-          document.title = t;
+      if (!raw) return;
+      var s = JSON.parse(raw);
+      if (!s) return;
+
+      // --- <title> patch ------------------------------------------------
+      var name = (s && s.logo && s.logo.name) || '';
+      var highlight = (s && s.logo && s.logo.highlight) || '';
+      if (name) {
+        var t = name;
+        if (highlight) t += ' ' + highlight;
+        t += ' - Giày chính hãng thể thao nam nữ';
+        document.title = t;
+      }
+
+      // --- inline <style> override of hardcoded logo / banner / topbar --
+      // We use :where() for low specificity, then re-raise with !important
+      // only where needed.  We deliberately do NOT touch DOM nodes here
+      // (the body hasn't been parsed yet) — we just inject CSS that hides
+      // the hardcoded text and shows our injected ::before content.
+      var css = '';
+
+      // Logo: hide hardcoded "DA" / "Dragon Activiti" and inject from state
+      if (s.logo) {
+        if (s.logo.abbr) {
+          css += '.brand-mark{font-size:0 !important;}\n';
+          css += '.brand-mark::before{content:"' + cssEscape(s.logo.abbr) + '";font-size:16px;}\n';
+        }
+        if (s.logo.color) {
+          css += '.brand-mark{background:linear-gradient(145deg,' + s.logo.color + ',' + s.logo.color + '99) !important;}\n';
+        }
+        if (s.logo.name || s.logo.highlight) {
+          css += '.brand-logo>span:last-child{font-size:0 !important;}\n';
+          css += '.brand-logo>span:last-child::before{content:"' + cssEscape(s.logo.name || 'Dragon') + ' ";font-size:16px;font-weight:800;color:#fff;}\n';
+          css += '.brand-logo>span:last-child::after{content:"' + cssEscape(s.logo.highlight || 'Activiti') + '";font-size:16px;font-weight:800;color:var(--gold);margin-left:2px;}\n';
+          // Suppress the original inner <span> (Activiti)
+          css += '.brand-logo>span:last-child>span{display:none !important;}\n';
         }
       }
+
+      // Banner: hide hardcoded H1 + desc and inject from state
+      if (s.banner) {
+        if (s.banner.heroH1) {
+          css += 'h1{font-size:0 !important;line-height:0 !important;}\n';
+          css += 'h1::before{content:"' + cssEscape(s.banner.heroH1) + '";font-size:clamp(28px,4vw,48px);line-height:1.15;font-weight:800;display:block;}\n';
+          if (s.banner.heroSub) {
+            css += 'h1::after{content:"' + cssEscape(s.banner.heroSub) + '";display:block;margin-top:6px;color:var(--red);font-size:clamp(20px,3vw,34px);}\n';
+            css += 'h1 .hero-highlight{display:none !important;}\n';
+          }
+        }
+        if (s.banner.heroDesc) {
+          css += '.hero-text p:not(.hero-eyebrow){font-size:0 !important;}\n';
+          css += '.hero-text p:not(.hero-eyebrow)::before{content:"' + cssEscape(s.banner.heroDesc) + '";font-size:16px;line-height:1.6;color:#555;}\n';
+        }
+        if (s.banner.topbarText) {
+          css += '.topbar-text{font-size:0 !important;}\n';
+          css += '.topbar-text::before{content:"' + cssEscape(s.banner.topbarText) + '";font-size:13px;color:rgba(255,255,255,0.88);}\n';
+        }
+        if (s.banner.topbarCode) {
+          css += '.topbar-pill{font-size:0 !important;padding-left:6px;padding-right:6px;}\n';
+          css += '.topbar-pill::before{content:"' + cssEscape(s.banner.topbarCode) + '";font-size:12px;}\n';
+        }
+        if (s.banner.topbarColor) {
+          css += '.topbar{background:' + s.banner.topbarColor + ' !important;}\n';
+        }
+      }
+
+      if (css) {
+        var style = document.createElement('style');
+        style.setAttribute('data-da-head-override', '1');
+        style.textContent = css;
+        document.head.appendChild(style);
+      }
     } catch (e) { /* ignore */ }
-    // 2. Hide body via inline style (highest precedence, no CSS race).
-    // The end-of-body reveal script adds `da-paint-ready` to <html> which
-    // the inline <style> uses to undo this.
+
+    // Hide the body via inline style (highest precedence, no CSS race).
+    // website-integration.js will undo this once all syncs finish.
     document.documentElement.style.visibility = 'hidden';
+
+    // Minimal CSS escaper for content strings (handles ", \, newlines)
+    function cssEscape(str) {
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\r?\n/g, '\\a ');
+    }
   })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -4866,35 +4937,10 @@ document.querySelectorAll('a[data-scroll-to="sneaker-section"]').forEach(link =>
   });
 });
 </script>
-<script>
-  // Reveal the body once every script (data-bridge.js, website-integration.js,
-  // integration-test.js) has finished running and applied admin-synced
-  // logo / banner / footer / products to the DOM. We have THREE layers of
-  // hide that need to be undone:
-  //   (a) <style>html{visibility:hidden}</style> in <head>
-  //   (b) document.documentElement.style.visibility = 'hidden' from <head> script
-  //   (c) html:not(.da-paint-ready) { visibility: hidden !important; } CSS rule
-  // (a) is a static stylesheet, so we override with inline style 'visible'.
-  // (b) we clear via style.visibility = ''.
-  // (c) we stop matching by adding 'da-paint-ready' to <html>.
-  (function () {
-    var reveal = function () {
-      document.documentElement.classList.add('da-paint-ready');
-      document.documentElement.style.visibility = 'visible';
-    };
-    // Wait for DOM + a double-rAF so any deferred sync work (banner img
-    // swaps, lazy font measurements, etc.) has a chance to settle.
-    var ready = function () {
-      requestAnimationFrame(function () {
-        requestAnimationFrame(reveal);
-      });
-    };
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', ready);
-    } else {
-      ready();
-    }
-  })();
-</script>
+<!-- (No end-of-body reveal script: reveal is now performed by
+     website-integration.js after it has finished applying admin-synced
+     logo / banner / footer / products to the DOM. That guarantees the
+     first paint shows the LATEST brand data, never the hardcoded
+     defaults. See syncAndReveal() in website-integration.js.) -->
 </body>
 </html>
