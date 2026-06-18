@@ -20,6 +20,27 @@
   // data. This script runs synchronously in <head> so its <style> is in
   // place before the browser parses the body.
   (function () {
+    // Helpers MUST be defined before any use, otherwise the try/catch
+    // below swallows the ReferenceError and the injected <style> is
+    // never created. We declare them up front.
+    function cssEscape(str) {
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\r?\n/g, '\\a ');
+    }
+    // Darken a #rrggbb color by 0x28 on each channel — mirrors the
+    // darken() helper in admin.html so the website gradient matches
+    // the admin preview gradient exactly.
+    function darken(hex) {
+      var h = String(hex || '').replace('#', '');
+      if (h.length !== 6) return hex || '#b71c1c';
+      var r = Math.max(0, parseInt(h.slice(0, 2), 16) - 0x28);
+      var g = Math.max(0, parseInt(h.slice(2, 4), 16) - 0x28);
+      var b = Math.max(0, parseInt(h.slice(4, 6), 16) - 0x28);
+      return '#' + [r, g, b].map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+    }
+
     try {
       var raw = localStorage.getItem('dragon_state');
       if (!raw) return;
@@ -37,51 +58,84 @@
       }
 
       // --- inline <style> override of hardcoded logo / banner / topbar --
-      // We use :where() for low specificity, then re-raise with !important
-      // only where needed.  We deliberately do NOT touch DOM nodes here
-      // (the body hasn't been parsed yet) — we just inject CSS that hides
-      // the hardcoded text and shows our injected ::before content.
+      // The injected CSS mirrors the styling of the original hardcoded
+      // elements it replaces (.brand-mark, .brand-logo span, h1 hero,
+      // .hero-text p, .topbar-text, .topbar-pill, .topbar) so the
+      // admin-synced text and colors look identical to the defaults,
+      // not stripped down. All font-size:0 tricks live behind a
+      // da-fouc-hide class that is removed by the reveal script
+      // (data-da-head-override selector). We deliberately do NOT
+      // touch DOM nodes here (the body hasn't been parsed yet).
       var css = '';
 
-      // Logo: hide hardcoded "DA" / "Dragon Activiti" and inject from state
+      // Base rule: any element tagged .da-fouc-hide has its real text
+      // collapsed to 0 height and its own box becomes invisible. The
+      // injected ::before / ::after below carry the admin-synced
+      // content visually. JS-side syncs (syncBrandAndBannerToPage)
+      // remove this class once the new text is in place so the regular
+      // CSS takes over.
+      css += '.da-fouc-hide{visibility:hidden !important;font-size:0 !important;line-height:0 !important;letter-spacing:0 !important;}\n';
+      // Safety net: if the JS sync is somehow skipped but the page is
+      // revealed (e.g. the 2.5s hard-fail fallback fired), at least make
+      // the original hardcoded text visible so the user is not staring
+      // at empty boxes. The new admin text already lives in ::before
+      // but with visibility:visible the original text would flash on
+      // top, so we keep font-size:0 — the user sees the ::before text.
+      css += 'html.da-paint-ready .da-fouc-hide{visibility:hidden !important;font-size:0 !important;line-height:0 !important;}\n';
+
+      // --- Logo --------------------------------------------------------
+      // .brand-mark is 42x42 with gradient bg, text centered, weight
+      // 900, font-size 15px. We mirror that exactly.
       if (s.logo) {
-        if (s.logo.abbr) {
-          css += '.brand-mark{font-size:0 !important;}\n';
-          css += '.brand-mark::before{content:"' + cssEscape(s.logo.abbr) + '";font-size:16px;}\n';
-        }
         if (s.logo.color) {
-          css += '.brand-mark{background:linear-gradient(145deg,' + s.logo.color + ',' + s.logo.color + '99) !important;}\n';
+          css += '.brand-mark{background:linear-gradient(145deg,' + s.logo.color + ' 0%,' + darken(s.logo.color) + ' 100%) !important;box-shadow:0 4px 14px ' + s.logo.color + '73,inset 0 0 0 2px rgba(255,255,255,0.15) !important;}\n';
         }
+        if (s.logo.abbr) {
+          // Hide the original "DA" character, show our own via ::before
+          // on the .brand-mark itself, not a child, to keep flexbox
+          // centering working.
+          css += '.brand-mark.da-fouc-hide::before{content:"' + cssEscape(s.logo.abbr) + '";visibility:visible !important;display:inline-flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:15px;font-weight:900;line-height:1;color:#fff;letter-spacing:0;}\n';
+        }
+
+        // .brand-logo > span:last-child holds "Dragon <span>Activiti</span>"
+        // and the second inner span is gold via .brand-logo span:last-child span.
+        // We rebuild it: white name + gold highlight, both inline.
         if (s.logo.name || s.logo.highlight) {
-          css += '.brand-logo>span:last-child{font-size:0 !important;}\n';
-          css += '.brand-logo>span:last-child::before{content:"' + cssEscape(s.logo.name || 'Dragon') + ' ";font-size:16px;font-weight:800;color:#fff;}\n';
-          css += '.brand-logo>span:last-child::after{content:"' + cssEscape(s.logo.highlight || 'Activiti') + '";font-size:16px;font-weight:800;color:var(--gold);margin-left:2px;}\n';
-          // Suppress the original inner <span> (Activiti)
-          css += '.brand-logo>span:last-child>span{display:none !important;}\n';
+          var nm  = cssEscape(s.logo.name || 'Dragon');
+          var hl  = cssEscape(s.logo.highlight || 'Activiti');
+          css += '.brand-logo>span:last-child.da-fouc-hide{visibility:hidden !important;font-size:0 !important;}\n';
+          css += '.brand-logo>span:last-child.da-fouc-hide::before{content:"' + nm + ' ";visibility:visible !important;font-size:clamp(18px,4vw,22px);font-weight:800;line-height:1.2;color:#fff;letter-spacing:-0.01em;white-space:pre;}\n';
+          css += '.brand-logo>span:last-child.da-fouc-hide::after{content:"' + hl + '";visibility:visible !important;font-size:clamp(18px,4vw,22px);font-weight:800;line-height:1.2;color:var(--gold);letter-spacing:-0.01em;margin-left:2px;}\n';
         }
       }
 
-      // Banner: hide hardcoded H1 + desc and inject from state
+      // --- Hero h1 -----------------------------------------------------
+      // Original .hero-text h1: clamp(28px,5.5vw,48px), weight 800,
+      // line-height 1.08, margin-bottom 16px, letter-spacing -0.03em.
+      // The hardcoded h1 contains a <br> + <span class="hero-highlight">.
+      // We collapse the whole h1 to 0, then emit heroH1 + (optional
+      // gradient) heroSub via ::before / ::after.
       if (s.banner) {
         if (s.banner.heroH1) {
-          css += 'h1{font-size:0 !important;line-height:0 !important;}\n';
-          css += 'h1::before{content:"' + cssEscape(s.banner.heroH1) + '";font-size:clamp(28px,4vw,48px);line-height:1.15;font-weight:800;display:block;}\n';
+          css += 'h1.da-fouc-hide{visibility:hidden !important;font-size:0 !important;line-height:0 !important;letter-spacing:0 !important;}\n';
+          css += 'h1.da-fouc-hide::before{content:"' + cssEscape(s.banner.heroH1) + '";visibility:visible !important;display:block;font-size:clamp(28px,5.5vw,48px);font-weight:800;line-height:1.08;letter-spacing:-0.03em;margin-bottom:16px;color:#fff;}\n';
           if (s.banner.heroSub) {
-            css += 'h1::after{content:"' + cssEscape(s.banner.heroSub) + '";display:block;margin-top:6px;color:var(--red);font-size:clamp(20px,3vw,34px);}\n';
-            css += 'h1 .hero-highlight{display:none !important;}\n';
+            css += 'h1.da-fouc-hide::after{content:"' + cssEscape(s.banner.heroSub) + '";visibility:visible !important;display:block;margin-top:4px;background:linear-gradient(90deg,#ff6b6b 0%,var(--red) 50%,#ff8a80 100%);-webkit-background-clip:text;background-clip:text;color:transparent;font-size:clamp(20px,4vw,34px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;}\n';
           }
         }
         if (s.banner.heroDesc) {
-          css += '.hero-text p:not(.hero-eyebrow){font-size:0 !important;}\n';
-          css += '.hero-text p:not(.hero-eyebrow)::before{content:"' + cssEscape(s.banner.heroDesc) + '";font-size:16px;line-height:1.6;color:#555;}\n';
+          css += '.hero-text>p:not(.hero-eyebrow).da-fouc-hide{visibility:hidden !important;font-size:0 !important;line-height:0 !important;}\n';
+          css += '.hero-text>p:not(.hero-eyebrow).da-fouc-hide::before{content:"' + cssEscape(s.banner.heroDesc) + '";visibility:visible !important;display:block;font-size:clamp(14px,2.5vw,17px);line-height:1.6;color:rgba(255,255,255,0.75);max-width:44ch;margin-bottom:20px;}\n';
         }
+
+        // --- Top bar ---------------------------------------------------
         if (s.banner.topbarText) {
-          css += '.topbar-text{font-size:0 !important;}\n';
-          css += '.topbar-text::before{content:"' + cssEscape(s.banner.topbarText) + '";font-size:13px;color:rgba(255,255,255,0.88);}\n';
+          css += '.topbar-text.da-fouc-hide{visibility:hidden !important;font-size:0 !important;line-height:0 !important;}\n';
+          css += '.topbar-text.da-fouc-hide::before{content:"' + cssEscape(s.banner.topbarText) + '";visibility:visible !important;font-size:clamp(11px,2.5vw,13px);line-height:1.4;color:rgba(255,255,255,0.88);}\n';
         }
         if (s.banner.topbarCode) {
-          css += '.topbar-pill{font-size:0 !important;padding-left:6px;padding-right:6px;}\n';
-          css += '.topbar-pill::before{content:"' + cssEscape(s.banner.topbarCode) + '";font-size:12px;}\n';
+          css += '.topbar-pill.da-fouc-hide{visibility:hidden !important;font-size:0 !important;line-height:0 !important;letter-spacing:0 !important;}\n';
+          css += '.topbar-pill.da-fouc-hide::before{content:"' + cssEscape(s.banner.topbarCode) + '";visibility:visible !important;display:inline-block;padding:3px 10px;font-size:11px;font-weight:800;line-height:1.4;letter-spacing:0.06em;color:var(--ink);background:linear-gradient(135deg,var(--gold) 0%,#e6b800 100%);border-radius:999px;}\n';
         }
         if (s.banner.topbarColor) {
           css += '.topbar{background:' + s.banner.topbarColor + ' !important;}\n';
@@ -99,14 +153,6 @@
     // Hide the body via inline style (highest precedence, no CSS race).
     // website-integration.js will undo this once all syncs finish.
     document.documentElement.style.visibility = 'hidden';
-
-    // Minimal CSS escaper for content strings (handles ", \, newlines)
-    function cssEscape(str) {
-      return String(str)
-        .replace(/\\/g, '\\\\')
-        .replace(/"/g, '\\"')
-        .replace(/\r?\n/g, '\\a ');
-    }
   })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />

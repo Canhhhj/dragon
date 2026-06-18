@@ -78,6 +78,14 @@ window.websiteIntegration = {
 
     console.log('[integration] Initializing website integration');
 
+    // Tag every element that has a hardcoded logo / banner / topbar value
+    // with .da-fouc-hide so the inline <style data-da-head-override>
+    // injected from <head> can replace it with ::before / ::after content
+    // sourced from dragon_state. This is what prevents the first paint
+    // from showing the old hardcoded text. The matching sync*() calls
+    // below strip the class once the new text is in place.
+    this.markFoucElements();
+
     // Sync products from admin
     this.syncAdminProductsToPage();
 
@@ -293,21 +301,71 @@ window.websiteIntegration = {
     this.renderSaleSection();
   },
 
-  // Sync Logo, Brand, and Banner settings from admin state to page
+  // Tag the elements whose text the inline <head> CSS is going to override
+  // with .da-fouc-hide. The selector list mirrors the rules in
+  // <style data-da-head-override> inside index.html. We only tag what
+  // we know we can replace; any element that admin state leaves
+  // untouched is left alone so its hardcoded value still renders.
+  markFoucElements() {
+    const state = (window.DragonState && window.DragonState.getState) ? window.DragonState.getState() : {};
+    const logo = state.logo || {};
+    const banner = state.banner || {};
+
+    const tag = (selector) => {
+      document.querySelectorAll(selector).forEach(el => el.classList.add('da-fouc-hide'));
+    };
+
+    if (logo.abbr || logo.color) {
+      tag('.brand-mark');
+    }
+    if (logo.name || logo.highlight) {
+      tag('.brand-logo > span:last-child');
+    }
+    if (banner.heroH1) tag('h1');
+    if (banner.heroDesc) tag('.hero-text > p:not(.hero-eyebrow)');
+    if (banner.topbarText) tag('.topbar-text');
+    if (banner.topbarCode) tag('.topbar-pill');
+  },
+
+  // Sync Logo, Brand, and Banner settings from admin state to page.
+  // The <head> FOUC script injected a <style data-da-head-override> that
+  // hides the original hardcoded text and shows ::before/::after content
+  // sourced from dragon_state in localStorage. The matching DOM nodes
+  // need to be marked with the .da-fouc-hide class for those CSS rules
+  // to apply. After we overwrite the text/HTML to match the admin state
+  // we strip the class, so the regular CSS takes over from then on.
   syncBrandAndBannerToPage() {
     if (typeof window.DragonState === 'undefined') return;
     const state = window.DragonState.getState();
     console.log('[integration] syncBrandAndBannerToPage', state);
 
+    const markFouc = (el) => el && el.classList.add('da-fouc-hide');
+    const unmarkFouc = (el) => el && el.classList.remove('da-fouc-hide');
+    const darken = (hex) => {
+      const h = String(hex || '').replace('#', '');
+      if (h.length !== 6) return hex || '#b71c1c';
+      const r = Math.max(0, parseInt(h.slice(0, 2), 16) - 0x28);
+      const g = Math.max(0, parseInt(h.slice(2, 4), 16) - 0x28);
+      const b = Math.max(0, parseInt(h.slice(4, 6), 16) - 0x28);
+      return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+    };
+
     if (state.logo) {
       document.querySelectorAll('.brand-mark').forEach(el => {
+        markFouc(el);
         el.textContent = state.logo.abbr || 'DA';
         if (state.logo.color) {
-          el.style.background = `linear-gradient(145deg, ${state.logo.color}, ${state.logo.color}aa)`;
+          el.style.background = `linear-gradient(145deg, ${state.logo.color} 0%, ${darken(state.logo.color)} 100%)`;
+          el.style.boxShadow = `0 4px 14px ${state.logo.color}73, inset 0 0 0 2px rgba(255,255,255,0.15)`;
         }
+        // unmark after the new text is in place so the regular CSS
+        // (font-size:15px, font-weight:900) renders it correctly
+        unmarkFouc(el);
       });
       document.querySelectorAll('.brand-logo > span:last-child').forEach(el => {
+        markFouc(el);
         el.innerHTML = `${state.logo.name || 'Dragon'} <span>${state.logo.highlight || 'Activiti'}</span>`;
+        unmarkFouc(el);
       });
     }
 
@@ -316,36 +374,45 @@ window.websiteIntegration = {
       if (heroVisualImg && state.banner.heroUrl) heroVisualImg.src = state.banner.heroUrl;
 
       // Only override H1/desc/topbar when the admin has set a NON-EMPTY
-      // value. Previously we used `!== undefined`, which meant an empty
-      // string still overwrote the hardcoded default with `<br><span></span>`,
-      // and combined with a stale browser cache this looked like a flash of
-      // "old" content. Empty == "use whatever the HTML default is".
+      // value. Empty == "use whatever the HTML default is".
       if (state.banner.heroH1) {
         const heroH1 = document.querySelector('h1');
         if (heroH1) {
+          markFouc(heroH1);
           heroH1.innerHTML = `${state.banner.heroH1}<br><span class="hero-highlight">${state.banner.heroSub || ''}</span>`;
+          unmarkFouc(heroH1);
         }
       }
 
       if (state.banner.heroDesc) {
         const heroP = document.querySelector('.hero-text p:not(.hero-eyebrow)');
-        if (heroP) heroP.textContent = state.banner.heroDesc;
+        if (heroP) {
+          markFouc(heroP);
+          heroP.textContent = state.banner.heroDesc;
+          unmarkFouc(heroP);
+        }
       }
 
       if (state.banner.topbarText) {
         const topbarText = document.querySelector('.topbar-text');
-        if (topbarText) topbarText.textContent = state.banner.topbarText;
+        if (topbarText) {
+          markFouc(topbarText);
+          topbarText.textContent = state.banner.topbarText;
+          unmarkFouc(topbarText);
+        }
       }
 
       if (state.banner.topbarCode) {
         const topbarPill = document.querySelector('.topbar-pill');
         if (topbarPill) {
+          markFouc(topbarPill);
           topbarPill.textContent = state.banner.topbarCode;
           if (!state.banner.topbarCode) {
             topbarPill.style.display = 'none';
           } else {
             topbarPill.style.display = '';
           }
+          unmarkFouc(topbarPill);
         }
       }
 
